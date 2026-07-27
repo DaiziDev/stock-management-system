@@ -2,7 +2,6 @@ package com.sgs.backend.commandeClient;
 
 import com.sgs.backend.client.Client;
 import com.sgs.backend.common.AbstractEntity;
-import com.sgs.backend.ligneCommandeClient.LigneCommandeClient;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +9,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -30,6 +28,11 @@ public class CommandeClient extends AbstractEntity {
     @JoinColumn(name = "idclient")
     private Client client;
 
-    @OneToMany(mappedBy = "commandeClient")
-    private List<LigneCommandeClient> ligneCommandeClients;
+    // TODO (roadmap #7) : réactiver cette relation une fois LigneCommandeClient
+    // construite avec son champ `commandeClient` (@ManyToOne côté LigneCommandeClient).
+    // Hibernate valide TOUTES les entités au démarrage : une relation mappedBy
+    // pointant vers un champ inexistant empêche TOUTE l'application de démarrer,
+    // pas seulement CommandeClient. D'où la désactivation temporaire.
+    // @OneToMany(mappedBy = "commandeClient")
+    // private List<LigneCommandeClient> ligneCommandeClients;
 }
