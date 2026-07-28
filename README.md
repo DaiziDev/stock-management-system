@@ -3,8 +3,8 @@
 Application web multi-entreprises de gestion de stock.
 
 ## Stack
-- **Backend** : Spring Boot 3 / Java 21
-- **Frontend** : Angular 17
+- **Backend** : Spring Boot 3 / Java 17
+- **Frontend** : Angular 21
 - **Base de données** : PostgreSQL
 
 ## Structure
