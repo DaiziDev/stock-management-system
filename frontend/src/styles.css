@@ -1,3 +1,335 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import "tailwindcss";
+
+/* ================= DESIGN TOKENS (issus de maquette.html) ================= */
+:root {
+  --ink-950: #0A1E20;
+  --ink-900: #0F2A2D;
+  --ink-850: #132F32;
+  --ink-800: #173A3E;
+  --ink-700: #204C50;
+  --ink-600: #2E6165;
+  --gold-600: #A9761F;
+  --gold-500: #C9922E;
+  --gold-400: #DDAE55;
+  --gold-100: #FBF0DC;
+  --bg: #F6F7F8;
+  --surface: #FFFFFF;
+  --surface-alt: #F1F2F4;
+  --surface-hover: #EBEDEF;
+  --border: #E6E8EB;
+  --border-strong: #D7DBDE;
+  --text-900: #12191B;
+  --text-700: #33403F;
+  --text-600: #5B6A68;
+  --text-400: #96A3A1;
+  --text-300: #B9C3C1;
+  --success: #1E9A55;
+  --success-bg: #E5F6EB;
+  --danger: #DD4B3E;
+  --danger-bg: #FBEAE7;
+  --info: #2D6FE0;
+  --info-bg: #E9F0FE;
+  --r-sm: 9px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+  --sh-xs: 0 1px 2px rgba(10, 30, 32, 0.05);
+  --sh-sm: 0 2px 10px rgba(10, 30, 32, 0.06);
+  --sh-md: 0 12px 30px rgba(10, 30, 32, 0.1);
+  --sh-lg: 0 30px 70px rgba(10, 30, 32, 0.24);
+  --font-d: 'Fraunces', serif;
+  --font-b: 'Inter', sans-serif;
+  --font-m: 'IBM Plex Mono', monospace;
+  --ease: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --sbw: 264px;
+}
+
+/* ================= BASE ================= */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-b);
+  background: var(--bg);
+  color: var(--text-900);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--gold-100);
+  color: var(--ink-900);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ================= ICONES ================= */
+.i {
+  flex-shrink: 0;
+}
+
+/* ================= LOGO ================= */
+.logo-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: linear-gradient(150deg, var(--gold-400), var(--gold-600));
+  color: var(--ink-950);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-d);
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: 0 4px 14px rgba(201, 146, 46, 0.4);
+  flex-shrink: 0;
+}
+
+/* ================= BOUTONS ================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  font-size: 13.8px;
+  transition:
+    transform 0.15s var(--ease-soft),
+    box-shadow 0.2s,
+    background 0.2s,
+    filter 0.2s;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--ink-850);
+  color: #fff;
+  box-shadow: var(--sh-xs);
+}
+
+.btn-primary:hover {
+  background: var(--ink-800);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-md);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-gold {
+  background: linear-gradient(150deg, var(--gold-400), var(--gold-600));
+  color: var(--ink-950);
+  box-shadow: 0 4px 14px rgba(201, 146, 46, 0.28);
+}
+
+.btn-gold:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(201, 146, 46, 0.38);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-600);
+  border: 1.5px solid var(--border);
+}
+
+.btn-ghost:hover {
+  border-color: var(--ink-700);
+  color: var(--ink-800);
+  background: var(--surface-alt);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 12.8px;
+}
+
+.btn[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ================= CHAMPS DE FORMULAIRE ================= */
+.field {
+  margin-bottom: 17px;
+}
+
+.field label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-600);
+  margin-bottom: 7px;
+}
+
+.field-input-wrap {
+  position: relative;
+}
+
+.field-input-wrap app-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-400);
+  pointer-events: none;
+}
+
+.field-input-wrap input,
+.field-input-wrap select {
+  padding-left: 38px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font-size: 14.5px;
+  color: var(--text-900);
+  transition:
+    border-color 0.2s var(--ease-soft),
+    box-shadow 0.2s var(--ease-soft);
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--ink-700);
+  box-shadow: 0 0 0 4px rgba(23, 58, 62, 0.09);
+  outline: none;
+}
+
+/* ================= EN-TÊTE DE PAGE ================= */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.page-head .eyebrow {
+  font-family: var(--font-m);
+  font-size: 11.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--gold-600);
+  display: block;
+  margin-bottom: 7px;
+}
+
+.page-head h1 {
+  font-family: var(--font-d);
+  font-size: 31px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.page-head p {
+  color: var(--text-600);
+  font-size: 13.6px;
+  margin-top: 5px;
+  max-width: 520px;
+}
+
+/* ================= CARTES & BADGES ================= */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 23px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4.5px 11px;
+  border-radius: 20px;
+  font-size: 11.2px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-gold {
+  background: var(--gold-100);
+  color: var(--gold-600);
+}
+
+.badge-green {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.badge-red {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.badge-ink {
+  background: rgba(23, 58, 62, 0.09);
+  color: var(--ink-700);
+}
+
+/* ================= RESPONSIVE GLOBAL ================= */
+@media (max-width: 640px) {
+  .page-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-head h1 {
+    font-size: 26px;
+  }
+}

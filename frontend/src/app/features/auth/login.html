@@ -1,0 +1,82 @@
+<div class="login-screen">
+  <div class="login-visual">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="lv-top">
+      <div class="logo-mark">S</div>
+      <b>SGS</b>
+    </div>
+
+    <div class="lv-mid">
+      <span class="lv-eyebrow"><span class="dot-live"></span>Gestion de stock multi-entreprises</span>
+      <h1>Chaque article compté,<br />chaque mouvement tracé.</h1>
+      <p>
+        Catalogue, commandes, ventes et niveaux de stock réunis dans un seul outil — pensé pour
+        plusieurs entreprises clientes, isolées les unes des autres.
+      </p>
+      <div class="lv-cards">
+        <div class="float-card fc1">
+          <div class="fc-ic"><app-icon name="trending-up" [size]="17" /></div>
+          <div><b>+12%</b><span>Ventes cette semaine</span></div>
+        </div>
+        <div class="float-card fc2">
+          <div class="fc-ic"><app-icon name="package" [size]="17" /></div>
+          <div><b>4 830</b><span>Articles suivis</span></div>
+        </div>
+        <div class="float-card fc3">
+          <div class="fc-ic"><app-icon name="check-circle-2" [size]="17" /></div>
+          <div><b>99.2%</b><span>Disponibilité</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lv-bottom">
+      <div><b>12</b><span>Entreprises actives</span></div>
+      <div><b>4 830</b><span>Articles suivis</span></div>
+      <div><b>18</b><span>Utilisateurs</span></div>
+    </div>
+  </div>
+
+  <div class="login-form-side">
+    <div class="login-card">
+      <div class="mobile-brand"><div class="logo-mark">S</div><b>SGS</b></div>
+      <h2>Connexion</h2>
+      <p class="sub">Accède à l'espace de gestion de ton entreprise.</p>
+
+      <form (ngSubmit)="login()">
+        <div class="field">
+          <label>Identifiant</label>
+          <div class="field-input-wrap">
+            <app-icon name="mail" />
+            <input [(ngModel)]="email" name="email" type="email" autocomplete="username" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Mot de passe</label>
+          <div class="field-input-wrap">
+            <app-icon name="lock" />
+            <input [(ngModel)]="password" name="password" type="password" autocomplete="current-password" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Rôle (mode démonstration)</label>
+          <select [(ngModel)]="role" name="role">
+            <option value="ADMIN">Administrateur</option>
+            <option value="GESTIONNAIRE">Gestionnaire</option>
+            <option value="VENDEUR">Vendeur</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
+      </form>
+
+      <p class="login-hint">
+        Mode démonstration — l'authentification réelle (JWT) sera branchée au backend.
+      </p>
+    </div>
+  </div>
+</div>
