@@ -1,0 +1,91 @@
+/* =========================================================
+   COMPOSANT — BOUTONS
+   ---------------------------------------------------------
+   .btn = la base commune. Puis une variante par intention :
+   - .btn-primary      : action principale (encre sombre)
+   - .btn-gold         : action mise en avant (or)
+   - .btn-ghost        : action secondaire (contour)
+   - .btn-danger-ghost : action destructive (rouge)
+   Modificateurs : .btn-block (pleine largeur), .btn-sm (petit).
+   ========================================================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  font-size: 13.8px;
+  transition:
+    transform 0.15s var(--ease-soft),
+    box-shadow 0.2s,
+    background 0.2s,
+    filter 0.2s;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--ink-850);
+  color: #fff;
+  box-shadow: var(--sh-xs);
+}
+
+.btn-primary:hover {
+  background: var(--ink-800);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-md);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-gold {
+  background: linear-gradient(150deg, var(--gold-400), var(--gold-600));
+  color: var(--ink-950);
+  box-shadow: 0 4px 14px rgba(201, 146, 46, 0.28);
+}
+
+.btn-gold:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(201, 146, 46, 0.38);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-600);
+  border: 1.5px solid var(--border);
+}
+
+.btn-ghost:hover {
+  border-color: var(--ink-700);
+  color: var(--ink-800);
+  background: var(--surface-alt);
+}
+
+.btn-danger-ghost {
+  background: transparent;
+  color: var(--danger);
+  border: 1.5px solid var(--danger-bg);
+}
+
+.btn-danger-ghost:hover {
+  background: var(--danger-bg);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 12.8px;
+}
+
+.btn[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}

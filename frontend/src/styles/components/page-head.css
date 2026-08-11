@@ -1,0 +1,39 @@
+/* =========================================================
+   COMPOSANT — EN-TÊTE DE PAGE
+   ---------------------------------------------------------
+   Le titre de chaque écran : eyebrow (sur-titre mono),
+   h1 (titre en Fraunces) + description et actions à droite.
+   ========================================================= */
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.page-head .eyebrow {
+  font-family: var(--font-m);
+  font-size: 11.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--gold-600);
+  display: block;
+  margin-bottom: 7px;
+}
+
+.page-head h1 {
+  font-family: var(--font-d);
+  font-size: 31px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.page-head p {
+  color: var(--text-600);
+  font-size: 13.6px;
+  margin-top: 5px;
+  max-width: 520px;
+}

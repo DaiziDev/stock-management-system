@@ -1,0 +1,155 @@
+/* =========================================================
+   COMPOSANT — TABLEAUX
+   ---------------------------------------------------------
+   .table-toolbar / .table-search : barre au-dessus (recherche).
+   .table-wrap : conteneur arrondi avec bordure.
+   .table-scroll : scroll horizontal sur mobile.
+   .row-actions / .icon-btn : boutons modifier/supprimer.
+   .avatar-sm : mini-avatar rond (ex: colonne client).
+   .empty-state : affiché quand il n'y a rien à montrer.
+   ========================================================= */
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.table-search {
+  position: relative;
+  flex: 1;
+  max-width: 280px;
+  min-width: 200px;
+}
+
+.table-search app-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-400);
+}
+
+.table-search input {
+  width: 100%;
+  padding: 9px 12px 9px 35px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 13.4px;
+  background: var(--surface);
+}
+
+.table-search input:focus {
+  border-color: var(--ink-700);
+  outline: none;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+thead th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-400);
+  font-weight: 700;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-alt);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 14px 18px;
+  font-size: 13.6px;
+  border-bottom: 1px solid var(--surface-alt);
+}
+
+tbody tr {
+  transition: background 0.15s var(--ease-soft);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: var(--surface-alt);
+}
+
+.row-actions {
+  display: flex;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.icon-btn {
+  width: 31px;
+  height: 31px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-400);
+  transition: all 0.15s;
+}
+
+.icon-btn:hover {
+  background: var(--surface-alt);
+  color: var(--ink-800);
+}
+
+.icon-btn.danger:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.avatar-sm {
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--ink-800);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 9px;
+  flex-shrink: 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-400);
+}
+
+.empty-state b {
+  display: block;
+  color: var(--text-600);
+  font-size: 14.5px;
+  margin-bottom: 4px;
+}
+
+.empty-state span {
+  font-size: 13px;
+}

@@ -1,0 +1,46 @@
+/* =========================================================
+   COMPOSANT — COQUILLE APPLICATIVE
+   ---------------------------------------------------------
+   Structure globale de l'application une fois connecté :
+   .sb-backdrop : voile sombre quand la sidebar est ouverte
+                 sur mobile (classe .show pour l'afficher).
+   .main-content : zone de contenu, décalée de --sbw.
+   .view : animation d'entrée d'une page.
+   ========================================================= */
+
+.sb-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 30, 32, 0.45);
+  z-index: 45;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s var(--ease-soft);
+}
+
+.sb-backdrop.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.main-content {
+  margin-left: var(--sbw);
+  padding: 98px 32px 56px;
+  min-height: 100vh;
+  transition: margin-left 0.35s var(--ease-soft);
+}
+
+.view {
+  animation: viewIn 0.4s var(--ease);
+}
+
+@keyframes viewIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,0 +1,12 @@
+/* =========================================================
+   TOKENS — TYPOGRAPHIE
+   ---------------------------------------------------------
+   Les 3 familles de police du design system, chargées dans
+   index.html via Google Fonts.
+   ========================================================= */
+
+:root {
+  --font-d: 'Fraunces', serif;            /* d = display : les titres */
+  --font-b: 'Inter', sans-serif;          /* b = body : le texte courant */
+  --font-m: 'IBM Plex Mono', monospace;   /* m = mono : chiffres, codes */
+}

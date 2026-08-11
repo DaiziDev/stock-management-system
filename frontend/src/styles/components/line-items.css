@@ -1,0 +1,43 @@
+/* =========================================================
+   COMPOSANT — LIGNES DYNAMIQUES
+   ---------------------------------------------------------
+   Utilisé dans les commandes / ventes pour saisir plusieurs
+   articles (article + quantité + prix) sur une même ligne.
+   .add-line-btn : bouton "Ajouter une ligne".
+   ========================================================= */
+
+.line-item {
+  display: grid;
+  grid-template-columns: 2fr 84px 100px 32px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.line-total-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  margin-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+
+.line-total-bar b {
+  font-family: var(--font-m);
+  font-size: 19px;
+}
+
+.add-line-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-700);
+  padding: 9px 4px;
+}
+
+.add-line-btn:hover {
+  color: var(--gold-600);
+}

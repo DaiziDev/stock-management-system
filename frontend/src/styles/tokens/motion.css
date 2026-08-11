@@ -1,0 +1,11 @@
+/* =========================================================
+   TOKENS — MOUVEMENT (courbes d'animation)
+   ---------------------------------------------------------
+   --ease      : entrée marquée (modales, changement de vue).
+   --ease-soft : micro-interactions (hover, focus, transitions).
+   ========================================================= */
+
+:root {
+  --ease: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+}

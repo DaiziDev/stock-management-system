@@ -1,0 +1,88 @@
+/* =========================================================
+   COMPOSANT — CARTES KPI (indicateurs du tableau de bord)
+   ---------------------------------------------------------
+   .kpi-grid : grille de 4 cartes sur le tableau de bord.
+   .kpi-card : une carte (icône, tendance, valeur, label).
+   .kpi-trend.up / .down : variation positive / négative.
+   .kpi-spark : mini-graphique en bas à droite de la carte.
+   ========================================================= */
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 21px;
+  position: relative;
+  overflow: hidden;
+  transition:
+    box-shadow 0.25s,
+    transform 0.25s;
+}
+
+.kpi-card:hover {
+  box-shadow: var(--sh-md);
+  transform: translateY(-2px);
+}
+
+.kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-trend {
+  font-size: 11.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.kpi-trend.up {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.kpi-trend.down {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.kpi-value {
+  font-family: var(--font-m);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.kpi-label {
+  font-size: 12.6px;
+  color: var(--text-600);
+  margin-top: 4px;
+}
+
+.kpi-spark {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  opacity: 0.9;
+}

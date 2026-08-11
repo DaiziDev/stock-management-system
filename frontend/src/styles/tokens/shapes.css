@@ -1,0 +1,18 @@
+/* =========================================================
+   TOKENS — FORMES (rayons & ombres)
+   ---------------------------------------------------------
+   r  = radius (rayons de bordure), du petit au grand.
+   sh = shadow (ombres portées), de la plus subtile à la plus forte.
+   ========================================================= */
+
+:root {
+  --r-sm: 9px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+
+  --sh-xs: 0 1px 2px rgba(10, 30, 32, 0.05);
+  --sh-sm: 0 2px 10px rgba(10, 30, 32, 0.06);
+  --sh-md: 0 12px 30px rgba(10, 30, 32, 0.1);
+  --sh-lg: 0 30px 70px rgba(10, 30, 32, 0.24);
+}
