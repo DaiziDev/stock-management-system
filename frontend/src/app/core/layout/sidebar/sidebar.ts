@@ -1,19 +1,21 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NAV, ROLE_LABELS } from '../../models/models';
 import { AuthService } from '../../services/services';
+import { SidebarService } from '../layout.service';
 import { AppIcon } from '../../../shared/components/icon/icon';
 
-/**
- * ⭐ Sidebar — composant unique et autonome (un seul fichier, template et
- * styles inline). Elle est affichée seule dans l'application pour l'instant ;
- * le reste du layout sera développé progressivement.
- */
 @Component({
   selector: 'app-sidebar',
+  standalone: true,
   imports: [RouterLink, RouterLinkActive, AppIcon],
   template: `
-    <aside class="sidebar">
+    <div
+      class="sb-backdrop"
+      [class.show]="mobileOpen()"
+      (click)="closeSidebar()"
+    ></div>
+    <aside class="sidebar" [class.mobile-open]="mobileOpen()">
       <div class="sb-brand">
         <div class="logo-mark">S</div>
         <span>SGS</span>
@@ -28,6 +30,7 @@ import { AppIcon } from '../../../shared/components/icon/icon';
               [routerLink]="item.route"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
+              (click)="closeSidebar()"
             >
               <app-icon [name]="item.icon" />
               <span>{{ item.label }}</span>
@@ -44,7 +47,11 @@ import { AppIcon } from '../../../shared/components/icon/icon';
               <b>{{ u.nom }}</b>
               <span>{{ roleLabel(u.role) }}</span>
             </div>
-            <button class="sb-logout" (click)="logout()" title="Déconnexion">
+            <button
+              class="sb-logout"
+              (click)="logout()"
+              title="Déconnexion"
+            >
               <app-icon name="log-out" />
             </button>
           </div>
@@ -68,6 +75,22 @@ import { AppIcon } from '../../../shared/components/icon/icon';
       display: flex;
       flex-direction: column;
       z-index: 50;
+      transition: transform 0.35s var(--ease-soft);
+    }
+
+    .sb-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 30, 32, 0.45);
+      z-index: 45;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s var(--ease-soft);
+    }
+
+    .sb-backdrop.show {
+      opacity: 1;
+      visibility: visible;
     }
 
     .sb-brand {
@@ -211,19 +234,28 @@ import { AppIcon } from '../../../shared/components/icon/icon';
       color: #fff;
       background: rgba(255, 255, 255, 0.08);
     }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.mobile-open {
+        transform: translateX(0);
+      }
+    }
   `,
 })
 export class Sidebar {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly sidebar = inject(SidebarService);
 
-  readonly groups = NAV;
+  readonly mobileOpen = this.sidebar.mobileOpen;
   readonly user = this.auth.user;
 
-  /**
-   * ⭐ Filtre par rôle : groupes du menu recalculés selon l'utilisateur courant.
-   * Les groupes dont tous les items sont interdits sont masqués.
-   */
+  readonly groups = NAV;
+
   readonly visibleGroups = computed(() =>
     this.groups
       .map((group) => ({
@@ -240,5 +272,9 @@ export class Sidebar {
   logout(): void {
     this.auth.logout();
     this.router.navigate(['/login']);
+  }
+
+  closeSidebar(): void {
+    this.sidebar.close();
   }
 }
