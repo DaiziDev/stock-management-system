@@ -48,7 +48,7 @@ export const ICON_PATHS: Record<string, string> = {
   selector: 'app-icon',
   template: `
     <svg
-      class="i"
+      class="shrink-0"
       [attr.width]="size()"
       [attr.height]="size()"
       viewBox="0 0 24 24"

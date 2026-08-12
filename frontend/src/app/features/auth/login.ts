@@ -9,7 +9,6 @@ import { AppIcon } from '../../shared/components/icon/icon';
   selector: 'app-login',
   imports: [FormsModule, AppIcon],
   templateUrl: './login.html',
-  styleUrl: './login.css',
 })
 export class Login implements OnInit {
   private readonly auth = inject(AuthService);

@@ -19,7 +19,7 @@ describe('AppIcon', () => {
   it('renders the SVG with the icon paths (sanitizer preserves SVG)', () => {
     const fixture = TestBed.createComponent(IconHost);
     fixture.detectChanges();
-    const svgs = fixture.nativeElement.querySelectorAll('svg.i');
+    const svgs = fixture.nativeElement.querySelectorAll('svg.shrink-0');
 
     expect(svgs.length).toBe(2);
     // Le chemin SVG doit être présent après sanitization d'Angular.
@@ -30,7 +30,7 @@ describe('AppIcon', () => {
   it('applies the requested size to the svg', () => {
     const fixture = TestBed.createComponent(IconHost);
     fixture.detectChanges();
-    const svgs = fixture.nativeElement.querySelectorAll('svg.i');
+    const svgs = fixture.nativeElement.querySelectorAll('svg.shrink-0');
 
     expect(svgs[0].getAttribute('width')).toBe('17');
     expect(svgs[1].getAttribute('width')).toBe('20');

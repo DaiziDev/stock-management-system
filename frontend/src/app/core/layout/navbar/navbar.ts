@@ -7,37 +7,46 @@ import { AppIcon } from '../../../shared/components/icon/icon';
   standalone: true,
   imports: [AppIcon],
   template: `
-    <nav class="topbar">
+    <nav
+      class="fixed right-0 top-0 z-40 flex h-[66px] items-center gap-3.5 border-b border-line bg-canvas/85 px-7 backdrop-blur-[10px] transition-[left] duration-[350ms] ease-soft max-md:left-0 max-md:px-4"
+    >
       <button
         type="button"
-        class="tb-hamburger"
+        class="hidden h-9 w-9 items-center justify-center rounded-[9px] text-gray-600 hover:bg-surface-alt max-md:flex"
         (click)="toggleSidebar()"
         aria-label="Menu"
       >
         <app-icon name="menu" />
       </button>
 
-      <div class="tb-search">
-        <app-icon name="search" />
-        <input type="text" placeholder="Rechercher..." />
+      <div class="relative max-w-[340px] flex-1 max-md:max-w-none">
+        <app-icon class="pointer-events-none absolute left-[13px] top-1/2 -translate-y-1/2 text-gray-400" name="search" />
+        <input
+          type="text"
+          placeholder="Rechercher..."
+          class="w-full rounded-[22px] border-[1.5px] border-line bg-surface-alt py-2 pl-[37px] pr-3.5 text-sm transition-all duration-200 focus:border-ink-700 focus:bg-white focus:shadow-xs focus:outline-none"
+        />
       </div>
 
-      <div class="tb-spacer"></div>
+      <div class="flex-1"></div>
 
       <div class="flex items-center gap-3">
-        <button type="button" class="tb-entreprise">
-          <span class="dot"></span>
+        <button
+          type="button"
+          class="relative flex cursor-pointer items-center gap-2.5 rounded-[22px] border-[1.5px] border-line bg-surface py-[6px] pl-[9px] pr-[13px] text-sm font-semibold transition-colors duration-200 hover:border-ink-700"
+        >
+          <span class="h-[7px] w-[7px] rounded-full bg-success shadow-[0_0_0_2.5px_rgba(30,154,85,0.2)]"></span>
           Bafoussam Trading Co
-          <app-icon name="chevron-down" class="chev" />
+          <app-icon name="chevron-down" [size]="13" class="text-gray-400" />
         </button>
 
         <button
           type="button"
           aria-label="Notifications"
-          class="tb-icon-btn"
+          class="relative flex h-[37px] w-[37px] items-center justify-center rounded-full text-gray-600 transition-colors duration-[180ms] hover:bg-surface-alt"
         >
           <app-icon name="bell" />
-          <span class="tb-badge"></span>
+          <span class="absolute right-1.5 top-[5px] h-2 w-2 rounded-full border-2 border-surface bg-danger"></span>
         </button>
       </div>
     </nav>

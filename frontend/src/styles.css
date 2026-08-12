@@ -1,51 +1,269 @@
 /* =========================================================
-   🎨 DESIGN SYSTEM — POINT D'ENTRÉE
+   🎨 DESIGN SYSTEM — FICHIER UNIQUE
    ---------------------------------------------------------
-   Ce fichier ne contient AUCUNE règle de style : il orchestre
-   simplement l'ordre d'importation des modules du design system.
+   Tout le design system tient ICI, rien d'autre :
+     1. les COULEURS : marque (encre/or), teintes claires,
+        fonds, textes, sémantiques + les variantes dark mode.
+     2. la TYPOGRAPHIE : familles de polices + échelle des tailles.
+     3. quelques formes : rayons, ombres, courbes, animations.
 
-   L'ordre est important (du général au spécifique) :
-     1. Tailwind  → reset de base + utilitaires
-     2. tokens/   → les variables (couleurs, polices, formes...)
-     3. base/     → reset global + utilitaires maison
-     4. components/ → les briques réutilisables
-     5. responsive → les points de rupture mobile
+   Les composants ne réécrivent AUCUN style : ils utilisent
+   les utilitaires Tailwind générés depuis ces tokens
+   (ex. bg-ink-950, text-gold-500, font-display, rounded-sm...).
 
-   👉 Règle d'or : pour utiliser le design system dans un
-   composant, on ne réécrit JAMAIS ces règles — on applique
-   les classes (ex: class="card", class="btn btn-primary").
+   👉 Changer une valeur ici = changement partout. C'est tout.
    ========================================================= */
 
 @import "tailwindcss";
 
-/* ===== 1. TOKENS — les variables ===== */
-@import "./styles/tokens/colors.css";
-@import "./styles/tokens/typography.css";
-@import "./styles/tokens/shapes.css";
-@import "./styles/tokens/motion.css";
-@import "./styles/tokens/layout.css";
+/* =========================================================
+   0. COMMENT L'UTILISER — guide rapide
+   ---------------------------------------------------------
+   RÈGLE D'OR
+   Dans un composant, on n'écrit JAMAIS de CSS : on applique
+   des classes utilitaires générées depuis les tokens ci-dessous.
+   Si un style manque, on le construit avec des utilitaires
+   Tailwind (ou on ajoute un token ICI).
 
-/* ===== 2. BASE — reset & utilitaires ===== */
-@import "./styles/base/reset.css";
-@import "./styles/base/utilities.css";
+   COULEURS → utilitaires
+   Chaque --color-* génère 3 utilitaires :
+     --color-ink-950  →  bg-ink-950    (fond)
+                         text-ink-950  (texte)
+                         border-ink-950 (bordure)
+   + une variante d'opacité : bg-ink-950/15, text-gold-500/80...
 
-/* ===== 3. COMPOSANTS — les briques ===== */
-@import "./styles/components/logo.css";
-@import "./styles/components/buttons.css";
-@import "./styles/components/fields.css";
-@import "./styles/components/page-head.css";
-@import "./styles/components/cards.css";
-@import "./styles/components/badges.css";
-@import "./styles/components/tables.css";
-@import "./styles/components/kpi.css";
-@import "./styles/components/activity.css";
-@import "./styles/components/topbar.css";
-@import "./styles/components/modal.css";
-@import "./styles/components/toast.css";
-@import "./styles/components/shell.css";
-@import "./styles/components/pos.css";
-@import "./styles/components/cart.css";
-@import "./styles/components/line-items.css";
+   Palette (rappel) :
+     ink-950→700     : verts profonds de marque (sidebar, boutons)
+     gold-600→100    : l'accent or (actions, état actif, logo)
+     fog-50→700      : textes clairs SUR fond sombre (sidebar, login)
+     canvas/surface/surface-alt : les 3 fonds de l'app
+     line            : bordures
+     gray-900→400    : textes neutres (900 = principal, 400 = secondaire)
+     success/danger/info (+ -bg) : états sémantiques (avec leur pastille)
 
-/* ===== 4. RESPONSIVE — breakpoints ===== */
-@import "./styles/responsive.css";
+   TYPOGRAPHIE → utilitaires
+     Familles : font-display (titres), font-body (texte), font-mono (chiffres/codes)
+     Tailles  : text-2xs(10) text-xs(11) text-sm(13) text-base(14.5)
+                text-lg(17) text-xl(19) text-2xl(24) text-3xl(29) text-4xl(46)
+     Graisses : font-medium, font-semibold, font-bold (ou font-[650] pour Fraunces)
+
+   FORMES → utilitaires
+     Rayons : rounded-xs(6) rounded-sm(9) rounded-md(14) rounded-lg(20)
+     Ombres : shadow-xs, shadow-sm, shadow-md, shadow-lg (subtile → forte)
+
+   MOUVEMENT → utilitaires
+     Courbes    : ease-soft (micro-interactions), ease-marked (modales, vues)
+     Animations : animate-view (entrée de page), animate-orb (fond login)
+     Transitions : transition-all, transition-colors, transition-[left]...
+
+   RESPONSIVE → variantes (points de rupture du projet)
+     max-lg:  ≤1180px (tableaux de bord)    max-sm:  ≤640px (mobile)
+     max-md:  ≤900px  (sidebar repliée)     max-xs:  ≤420px (très petit)
+     Ex. : class="grid-cols-4 max-lg:grid-cols-2 max-sm:grid-cols-1"
+
+   DARK MODE
+     Automatique : les tokens basculent selon les préférences de l'OS,
+     rien à faire. Ne jamais coder une couleur en dur dans un composant,
+     sinon elle ne basculera pas.
+
+   CHANGER UNE VALEUR
+     On modifie UNIQUEMENT ce fichier → toute l'app est mise à jour.
+     Ex. : --color-gold-500: #c9922e;  →  nouveau doré partout.
+
+   EXEMPLE — un bouton primaire :
+     <button class="inline-flex items-center gap-2 rounded-sm bg-ink-850 px-5 py-3
+                    text-sm font-semibold text-white shadow-xs transition-all duration-200
+                    ease-soft hover:-translate-y-px hover:bg-ink-800 hover:shadow-md">
+       Enregistrer
+     </button>
+
+   EXEMPLE — les variables CSS restent accessibles si besoin :
+     style="background: var(--color-ink-950)"
+   ========================================================= */
+
+/* =========================================================
+   1. TOKENS — @theme génère les variables CSS ET les classes
+      utilitaires (bg-*, text-*, font-*, rounded-*, shadow-*...)
+   ========================================================= */
+@theme {
+  /* ---- Marque : l'encre (verts profonds) ---- */
+  --color-ink-950: #0a1e20;
+  --color-ink-900: #0f2a2d;
+  --color-ink-850: #132f32;
+  --color-ink-800: #173a3e;
+  --color-ink-700: #204c50;
+
+  /* ---- Marque : l'or (l'accent) ---- */
+  --color-gold-600: #a9761f;
+  --color-gold-500: #c9922e;
+  --color-gold-400: #ddae55;
+  --color-gold-100: #fbf0dc;
+
+  /* ---- Teintes claires d'encre : textes SUR fond sombre
+         (sidebar, panneau de connexion) ---- */
+  --color-fog-50: #eaf1ee;
+  --color-fog-100: #cbdad5;
+  --color-fog-200: #b7c9c4;
+  --color-fog-300: #9fb3ad;
+  --color-fog-400: #8fa69f;
+  --color-fog-500: #7e9891;
+  --color-fog-600: #6f8983;
+  --color-fog-700: #4e6963;
+
+  /* ---- Fonds & surfaces ---- */
+  --color-canvas: #f6f7f8;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f2f4;
+
+  /* ---- Bordures ---- */
+  --color-line: #e6e8eb;
+
+  /* ---- Textes neutres ---- */
+  --color-gray-900: #12191b;
+  --color-gray-700: #33403f;
+  --color-gray-600: #5b6a68;
+  --color-gray-400: #96a3a1;
+
+  /* ---- Sémantiques ---- */
+  --color-success: #1e9a55;
+  --color-success-bg: #e5f6eb;
+  --color-danger: #dd4b3e;
+  --color-danger-bg: #fbeae7;
+  --color-info: #2d6fe0;
+  --color-info-bg: #e9f0fe;
+
+  /* ---- Typographie : familles ---- */
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* ---- Typographie : échelle des tailles ---- */
+  --text-2xs: 10px;
+  --text-2xs--line-height: 1.4;
+  --text-xs: 11px;
+  --text-xs--line-height: 1.4;
+  --text-sm: 13px;
+  --text-sm--line-height: 1.45;
+  --text-base: 14.5px;
+  --text-base--line-height: 1.5;
+  --text-lg: 17px;
+  --text-lg--line-height: 1.4;
+  --text-xl: 19px;
+  --text-xl--line-height: 1.35;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 29px;
+  --text-3xl--line-height: 1.15;
+  --text-4xl: 46px;
+  --text-4xl--line-height: 1.05;
+
+  /* ---- Formes : rayons ---- */
+  --radius-xs: 6px;
+  --radius-sm: 9px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  /* ---- Formes : ombres ---- */
+  --shadow-xs: 0 1px 2px rgb(10 30 32 / 0.05);
+  --shadow-sm: 0 2px 10px rgb(10 30 32 / 0.06);
+  --shadow-md: 0 12px 30px rgb(10 30 32 / 0.1);
+  --shadow-lg: 0 30px 70px rgb(10 30 32 / 0.24);
+
+  /* ---- Mouvement : courbes ---- */
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-marked: cubic-bezier(0.19, 1, 0.22, 1);
+
+  /* ---- Mouvement : animations ---- */
+  --animate-view: view-in 0.4s var(--ease-marked);
+  --animate-orb: orb-float 12s var(--ease-soft) infinite alternate;
+
+  @keyframes view-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes orb-float {
+    to {
+      transform: translate(30px, -24px) scale(1.08);
+    }
+  }
+
+  /* ---- Responsive : points de rupture du projet ---- */
+  --breakpoint-md: 900px; /* tablette / sidebar repliée */
+  --breakpoint-lg: 1180px; /* tableaux de bord */
+  --breakpoint-xs: 420px; /* très petit écran */
+
+  /* ---- Layout : largeur de la sidebar ---- */
+  --sbw: 264px;
+}
+
+/* =========================================================
+   2. DARK MODE — les mêmes tokens, valeurs sombres.
+      Activé automatiquement selon les préférences de l'OS.
+      👉 Pour un interrupteur manuel plus tard : remplacer la
+      media query par @custom-variant dark + classe .dark.
+   ========================================================= */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas: #0a1a1c;
+    --color-surface: #12282b;
+    --color-surface-alt: #0e2123;
+    --color-line: #21373a;
+    --color-gray-900: #e7efeb;
+    --color-gray-700: #b7c7c1;
+    --color-gray-600: #8ba19b;
+    --color-gray-400: #5f7570;
+    --color-gold-500: #dba94e;
+    --color-gold-100: #3a2f17;
+    --color-success: #38c473;
+    --color-success-bg: #12351f;
+    --color-danger: #ef6b5c;
+    --color-danger-bg: #3e1f1b;
+    --color-info: #6b9df0;
+    --color-info-bg: #172a45;
+  }
+}
+
+/* =========================================================
+   3. BASE — styles globaux minimaux (le reste = utilitaires)
+   ========================================================= */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--color-canvas);
+    color: var(--color-gray-900);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--color-gold-100);
+    color: var(--color-ink-900);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Respect de la préférence "réduire les animations" (accessibilité) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
