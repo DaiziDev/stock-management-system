@@ -11,4 +11,19 @@ import { Sidebar } from './core/layout/sidebar/sidebar';
 export const routes: Routes = [
   { path: 'login', component: Login },
   { path: '', component: Sidebar, canActivate: [authGuard] },
+  {
+    path: 'categories',
+    loadChildren: () =>
+      import('./features/categories/categorie.routes').then((m) => m.CATEGORIE_ROUTES),
+  },
+  {
+    path: 'articles',
+    loadChildren: () => import('./features/articles/article.routes').then((m) => m.ARTICLE_ROUTES),
+  },
+  {
+    path: 'dashboard',
+    loadChildren: () =>
+      import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
+  },
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 ];

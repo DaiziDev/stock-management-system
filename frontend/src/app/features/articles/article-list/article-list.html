@@ -1,0 +1,27 @@
+<h1>Articles</h1>
+<a routerLink="nouveau">Nouvel article</a>
+<table>
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>Désignation</th>
+      <th>Catégorie</th>
+      <th>Prix TTC</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (a of articles(); track a.id) {
+      <tr>
+        <td>{{ a.codeArticle }}</td>
+        <td>{{ a.designation }}</td>
+        <td>{{ a.categorie.designation }}</td>
+        <td>{{ a.prixUnitaireTtc }}</td>
+        <td>
+          <a [routerLink]="[a.id, 'edifier']">Modifier</a>
+          <button (click)="supprimer(a.id)">Supprimer</button>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

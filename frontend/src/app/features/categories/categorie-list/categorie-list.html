@@ -1,0 +1,22 @@
+<h1>Catégories</h1>
+<a routerLink="nouveau">Nouvelle catégorie</a>
+<table>
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>Désignation</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (c of categories(); track c.id) {
+      <tr>
+        <td>{{ c.code }}</td>
+        <td>{{ c.designation }}</td>
+        <td>
+          <a [routerLink]="[c.id, 'edifier']">Modifier</a>
+          <button (click)="supprimer(c.id)">Supprimer</button>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

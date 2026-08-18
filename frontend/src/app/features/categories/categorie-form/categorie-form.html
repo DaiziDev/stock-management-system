@@ -1,0 +1,6 @@
+<h1>{{ editId ? 'Modifier' : 'Nouvelle' }} catégorie</h1>
+<form [formGroup]="form" (ngSubmit)="enregistrer()">
+  <label>Code<input formControlName="code"></label>
+  <label>Désignation<input formControlName="designation"></label>
+  <button type="submit">{{ editId ? 'Enregistrer' : 'Créer' }}</button>
+</form>
