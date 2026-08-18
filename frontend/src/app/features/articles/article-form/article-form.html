@@ -1,0 +1,16 @@
+<h1>{{ editId ? 'Modifier' : 'Nouvel' }} article</h1>
+<form [formGroup]="form" (ngSubmit)="enregistrer()">
+  <label>Code article<input formControlName="codeArticle"></label>
+  <label>Désignation<input formControlName="designation"></label>
+  <label>Prix HT<input type="number" formControlName="prixUnitaireHt"></label>
+  <label>TVA (%)<input type="number" formControlName="tauxTva"></label>
+  <label>Catégorie
+    <select formControlName="categorieId">
+      <option [value]="null" disabled>-- choisir --</option>
+      @for (c of categorieService.categories(); track c.id) {
+        <option [value]="c.id">{{ c.designation }}</option>
+      }
+    </select>
+  </label>
+  <button type="submit">{{ editId ? 'Enregistrer' : 'Créer' }}</button>
+</form>

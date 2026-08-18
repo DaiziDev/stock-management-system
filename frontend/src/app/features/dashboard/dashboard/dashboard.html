@@ -1,0 +1,16 @@
+<h1>Tableau de bord</h1>
+
+@if (chargement()) {
+  <p>Chargement...</p>
+} @else {
+  <div class="kpi">
+    <div>
+      <span class="valeur">{{ totalCategories() }}</span>
+      <span class="label">Catégories</span>
+    </div>
+    <div>
+      <span class="valeur">{{ totalArticles() }}</span>
+      <span class="label">Articles</span>
+    </div>
+  </div>
+}
