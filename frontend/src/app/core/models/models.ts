@@ -17,8 +17,21 @@ export interface CurrentUser {
   id: number;
   nom: string;
   role: UserRole;
-  entrepriseId: number;
+  entrepriseId: number | null;
   login?: string;
+}
+
+/** Forme de la réponse POST /api/auth/login côté backend (LoginResponse). */
+export interface LoginResponse {
+  token: string;
+  user: {
+    id: number;
+    nom: string;
+    prenom: string;
+    login: string;
+    role: UserRole;
+    entrepriseId: number | null;
+  };
 }
 
 export interface NavItem {

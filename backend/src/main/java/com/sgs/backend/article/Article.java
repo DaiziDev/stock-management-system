@@ -2,6 +2,7 @@ package com.sgs.backend.article;
 
 import com.sgs.backend.categorie.Categorie;
 import com.sgs.backend.common.AbstractEntity;
+import com.sgs.backend.entreprise.Entreprise;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -39,4 +40,23 @@ public class Article extends AbstractEntity {
     @ManyToOne
     @JoinColumn(name = "idcategorie")
     private Categorie categorie;
+
+    // Jamais modifié directement (pas de setter appelé depuis ArticleService) :
+    // seul MvtStkService fait bouger cette valeur, et toujours avec une
+    // trace (un MvtStk) à l'appui. int (pas Integer) pour que 0 soit la
+    // valeur par défaut sans code supplémentaire à la création.
+    @Column(name = "stockactuel", nullable = false)
+    private int stockActuel;
+
+    // Nullable : un seuil non configuré signifie "pas d'alerte pour cet
+    // article", pas "seuil = 0".
+    @Column(name = "seuilmin")
+    private Integer seuilMin;
+
+    // Nullable pour l'instant : les lignes créées avant l'introduction du
+    // filtrage multi-tenant n'ont pas d'entreprise. Un article sans
+    // entreprise n'apparaît simplement dans aucune liste filtrée.
+    @ManyToOne
+    @JoinColumn(name = "identreprise")
+    private Entreprise entreprise;
 }

@@ -10,8 +10,12 @@ import lombok.NoArgsConstructor;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "roles")
 public class Roles extends AbstractEntity {
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "nom", nullable = false, unique = true)
+    private UserRole nom;
 }
