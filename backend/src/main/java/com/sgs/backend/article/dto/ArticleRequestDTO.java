@@ -28,6 +28,13 @@ public record ArticleRequestDTO(
 
         String photo,
 
+        // Pas de stockActuel ici : le stock ne se fixe jamais depuis ce DTO,
+        // seulement via un MvtStk (création d'article -> stock à 0, puis
+        // modifié par un ajustement ou une réception -- RG-06 du cahier
+        // des charges : toute correction de stock exige un motif tracé).
+        @PositiveOrZero(message = "le seuil minimum ne peut pas être négatif")
+        Integer seuilMin,
+
         @NotNull(message = "la catégorie est obligatoire")
         Long categorieId
 ) {}

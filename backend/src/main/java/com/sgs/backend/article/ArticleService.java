@@ -5,6 +5,7 @@ import com.sgs.backend.article.dto.ArticleResponseDTO;
 import com.sgs.backend.categorie.Categorie;
 import com.sgs.backend.categorie.CategorieRepository;
 import com.sgs.backend.common.ResourceNotFoundException;
+import com.sgs.backend.config.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +23,10 @@ public class ArticleService {
     // Ce n'est PAS le rôle du Controller (routage HTTP) ni celui du
     // Repository Article (accès aux données Article uniquement).
     private final CategorieRepository categorieRepository;
+    private final CurrentUserService currentUserService;
 
     public List<ArticleResponseDTO> findAll() {
-        return articleRepository.findAll()
+        return articleRepository.findByEntrepriseId(currentUserService.getEntrepriseId())
                 .stream()
                 .map(this::toResponseDTO)
                 .toList();
@@ -43,6 +45,9 @@ public class ArticleService {
 
         Article article = new Article();
         applyDto(article, dto, categorie);
+        // L'entreprise n'est jamais reçue du client : elle est toujours déduite
+        // du JWT de l'utilisateur connecté (voir CurrentUserService).
+        article.setEntreprise(currentUserService.getEntrepriseCourante());
 
         Article saved = articleRepository.save(article);
         return toResponseDTO(saved);
@@ -59,17 +64,26 @@ public class ArticleService {
     }
 
     public void delete(Long id) {
-        if (!articleRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Article introuvable avec id=" + id);
-        }
-        articleRepository.deleteById(id);
+        Article article = getArticleOrThrow(id);
+        articleRepository.delete(article);
     }
 
     // --- Helpers privés ---
 
+    // Ne renvoie l'article que s'il appartient à l'entreprise de l'utilisateur
+    // connecté. Un article d'une autre entreprise est traité comme
+    // "introuvable" (404), jamais comme "interdit" (403) -- pour ne pas
+    // révéler à un tenant que l'id existe chez un autre (RG-10).
     private Article getArticleOrThrow(Long id) {
-        return articleRepository.findById(id)
+        Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Article introuvable avec id=" + id));
+        Long entrepriseId = currentUserService.getEntrepriseId();
+        boolean appartientAuTenant = article.getEntreprise() != null
+                && article.getEntreprise().getId().equals(entrepriseId);
+        if (!appartientAuTenant) {
+            throw new ResourceNotFoundException("Article introuvable avec id=" + id);
+        }
+        return article;
     }
 
     private Categorie getCategorieOrThrow(Long categorieId) {
@@ -88,6 +102,7 @@ public class ArticleService {
         // incohérent avec le HT et la TVA envoyés à côté.
         article.setPrixUnitaireTtc(calculerTtc(dto.prixUnitaireHt(), dto.tauxTva()));
         article.setPhoto(dto.photo());
+        article.setSeuilMin(dto.seuilMin());
         article.setCategorie(categorie);
     }
 
@@ -112,6 +127,8 @@ public class ArticleService {
                 article.getTauxTva(),
                 article.getPrixUnitaireTtc(),
                 article.getPhoto(),
+                article.getStockActuel(),
+                article.getSeuilMin(),
                 categorieDto
         );
     }

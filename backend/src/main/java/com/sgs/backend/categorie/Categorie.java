@@ -2,6 +2,7 @@ package com.sgs.backend.categorie;
 
 import com.sgs.backend.article.Article;
 import com.sgs.backend.common.AbstractEntity;
+import com.sgs.backend.entreprise.Entreprise;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -26,4 +27,9 @@ public class Categorie extends AbstractEntity {
 
     @OneToMany(mappedBy = "categorie")
     private List<Article> articles;
+
+    // Nullable pour l'instant, même raison que sur Article.
+    @ManyToOne
+    @JoinColumn(name = "identreprise")
+    private Entreprise entreprise;
 }
