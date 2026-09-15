@@ -12,6 +12,10 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
     properties:
       hibernate:
         format_sql: true
@@ -27,6 +31,11 @@ spring:
           auth: true
           starttls:
             enable: true
+
+# JWT Configuration
+jwt:
+  secret: c2dzLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1nZW5lcmF0aW9uLTIwMjYtc3VwZXItc2VjdXJl
+  expiration: 86400000  # 24 heures en millisecondes
 
 server:
   port: 8081

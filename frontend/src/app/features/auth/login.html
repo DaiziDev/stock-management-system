@@ -58,16 +58,22 @@
       <h2 class="mb-1.5 font-display text-3xl font-[650]">Connexion</h2>
       <p class="mb-[30px] text-sm text-gray-600">Accède à l'espace de gestion de ton entreprise.</p>
 
-      <form (ngSubmit)="login()">
+      <form (ngSubmit)="submit()">
+        @if (error) {
+          <div class="mb-[17px] rounded-sm border border-danger/30 bg-danger/10 px-3.5 py-2.5 text-sm text-danger">
+            {{ error }}
+          </div>
+        }
+
         <div class="mb-[17px]">
           <label class="mb-[7px] block text-sm font-semibold text-gray-600">Identifiant</label>
           <div class="relative">
             <app-icon class="pointer-events-none absolute left-[13px] top-1/2 -translate-y-1/2 text-gray-400" name="mail" />
             <input
               class="w-full rounded-sm border-[1.5px] border-line bg-surface px-3.5 py-3 pl-[38px] text-base text-gray-900 transition-[border-color,box-shadow] duration-200 ease-soft focus:border-ink-700 focus:ring-4 focus:ring-ink-800/10 focus:outline-none"
-              [(ngModel)]="email"
-              name="email"
-              type="email"
+              [(ngModel)]="identifiant"
+              name="identifiant"
+              type="text"
               autocomplete="username"
             />
           </div>
@@ -87,29 +93,17 @@
           </div>
         </div>
 
-        <div class="mb-[17px]">
-          <label class="mb-[7px] block text-sm font-semibold text-gray-600">Rôle (mode démonstration)</label>
-          <select
-            class="w-full rounded-sm border-[1.5px] border-line bg-surface px-3.5 py-3 text-base text-gray-900 transition-[border-color,box-shadow] duration-200 ease-soft focus:border-ink-700 focus:ring-4 focus:ring-ink-800/10 focus:outline-none"
-            [(ngModel)]="role"
-            name="role"
-          >
-            <option value="ADMIN">Administrateur</option>
-            <option value="GESTIONNAIRE">Gestionnaire</option>
-            <option value="VENDEUR">Vendeur</option>
-          </select>
-        </div>
-
         <button
-          class="mt-1.5 inline-flex w-full items-center justify-center gap-2 rounded-sm bg-ink-850 px-5 py-3 text-sm font-semibold text-white shadow-xs transition-all duration-200 ease-soft hover:-translate-y-px hover:bg-ink-800 hover:shadow-md active:translate-y-0"
+          class="mt-1.5 inline-flex w-full items-center justify-center gap-2 rounded-sm bg-ink-850 px-5 py-3 text-sm font-semibold text-white shadow-xs transition-all duration-200 ease-soft hover:-translate-y-px hover:bg-ink-800 hover:shadow-md active:translate-y-0 disabled:pointer-events-none disabled:opacity-60"
           type="submit"
+          [disabled]="loading"
         >
-          Se connecter
+          {{ loading ? 'Connexion...' : 'Se connecter' }}
         </button>
       </form>
 
       <p class="mt-5 text-center text-xs text-gray-400">
-        Mode démonstration — l'authentification réelle (JWT) sera branchée au backend.
+        Compte de démonstration : admin&#64;sgs.local / admin123
       </p>
     </div>
   </div>

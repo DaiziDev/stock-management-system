@@ -1,0 +1,29 @@
+<h1>Clients</h1>
+<a routerLink="nouveau">Nouveau client</a>
+<table>
+  <thead>
+    <tr>
+      <th>Nom</th>
+      <th>Prénom</th>
+      <th>Ville</th>
+      <th>Mail</th>
+      <th>Téléphone</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (c of clients(); track c.id) {
+      <tr>
+        <td>{{ c.nom }}</td>
+        <td>{{ c.prenom }}</td>
+        <td>{{ c.ville }}</td>
+        <td>{{ c.mail }}</td>
+        <td>{{ c.numTel }}</td>
+        <td>
+          <a [routerLink]="[c.id, 'edifier']">Modifier</a>
+          <button (click)="supprimer(c.id)">Supprimer</button>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

@@ -10,6 +10,8 @@ public record ArticleResponseDTO(
         BigDecimal tauxTva,
         BigDecimal prixUnitaireTtc,
         String photo,
+        int stockActuel,
+        Integer seuilMin,
         CategorieSummaryDTO categorie
 ) {
     // Sous-DTO minimal : quand on liste des articles, le frontend a besoin

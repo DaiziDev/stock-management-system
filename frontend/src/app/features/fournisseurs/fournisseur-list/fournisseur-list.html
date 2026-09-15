@@ -1,0 +1,27 @@
+<h1>Fournisseurs</h1>
+<a routerLink="nouveau">Nouveau fournisseur</a>
+<table>
+  <thead>
+    <tr>
+      <th>Nom</th>
+      <th>Ville</th>
+      <th>Mail</th>
+      <th>Téléphone</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (f of fournisseurs(); track f.id) {
+      <tr>
+        <td>{{ f.nom }}</td>
+        <td>{{ f.ville }}</td>
+        <td>{{ f.mail }}</td>
+        <td>{{ f.numTel }}</td>
+        <td>
+          <a [routerLink]="[f.id, 'edifier']">Modifier</a>
+          <button (click)="supprimer(f.id)">Supprimer</button>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

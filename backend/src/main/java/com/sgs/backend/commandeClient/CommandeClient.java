@@ -1,7 +1,10 @@
 package com.sgs.backend.commandeClient;
 
 import com.sgs.backend.client.Client;
+import com.sgs.backend.commande.StatutCommandeClient;
 import com.sgs.backend.common.AbstractEntity;
+import com.sgs.backend.entreprise.Entreprise;
+import com.sgs.backend.ligneCommandeClient.LigneCommandeClient;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,6 +12,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -24,15 +28,22 @@ public class CommandeClient extends AbstractEntity {
     @Column(name = "datecommande", nullable = false)
     private Instant dateCommande;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "statut", nullable = false)
+    private StatutCommandeClient statut;
+
     @ManyToOne
     @JoinColumn(name = "idclient")
     private Client client;
 
-    // TODO (roadmap #7) : réactiver cette relation une fois LigneCommandeClient
-    // construite avec son champ `commandeClient` (@ManyToOne côté LigneCommandeClient).
-    // Hibernate valide TOUTES les entités au démarrage : une relation mappedBy
-    // pointant vers un champ inexistant empêche TOUTE l'application de démarrer,
-    // pas seulement CommandeClient. D'où la désactivation temporaire.
-    // @OneToMany(mappedBy = "commandeClient")
-    // private List<LigneCommandeClient> ligneCommandeClients;
+    @ManyToOne
+    @JoinColumn(name = "identreprise")
+    private Entreprise entreprise;
+
+    // cascade=ALL + orphanRemoval : les lignes n'ont pas de cycle de vie
+    // propre en dehors de leur commande -- les créer/supprimer avec elle
+    // évite d'avoir à gérer LigneCommandeClientRepository séparément
+    // depuis CommandeClientService.
+    @OneToMany(mappedBy = "commandeClient", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<LigneCommandeClient> lignes;
 }

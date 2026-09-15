@@ -1,32 +1,51 @@
-import { Injectable, signal } from '@angular/core';
-import type { CurrentUser, UserRole } from '../models/models';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
+import type { CurrentUser, LoginResponse, UserRole } from '../models/models';
 
-const STORAGE_KEY = 'sgs.currentUser';
-
-/**
- * Utilisateurs de démonstration (mêmes données que la maquette).
- * À remplacer par l'appel réel à /api/auth/login (JWT) quand le backend sera prêt.
- */
-const MOCK_USERS: Record<UserRole, CurrentUser> = {
-  ADMIN: { id: 1, nom: 'Ravel Kamga', role: 'ADMIN', entrepriseId: 1, login: 'admin@sgs.local' },
-  GESTIONNAIRE: { id: 3, nom: 'Eric Tabi', role: 'GESTIONNAIRE', entrepriseId: 1, login: 'gestionnaire@sgs.local' },
-  VENDEUR: { id: 2, nom: 'Chantal Biya', role: 'VENDEUR', entrepriseId: 1, login: 'vendeur@sgs.local' },
-};
+const TOKEN_KEY = 'sgs.token';
+const USER_KEY = 'sgs.currentUser';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  /** Utilisateur courant (signal) — toute l'app (sidebar, guards) réagit à ce signal. */
-  readonly user = signal<CurrentUser | null>(this.restore());
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiUrl}/auth`;
 
-  login(email: string, role: UserRole): void {
-    const user: CurrentUser = { ...MOCK_USERS[role], login: email };
-    this.user.set(user);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+  /** Utilisateur courant (signal) — toute l'app (sidebar, guards) réagit à ce signal. */
+  readonly user = signal<CurrentUser | null>(this.restoreUser());
+
+  /**
+   * Authentifie l'utilisateur via POST /api/auth/login.
+   * En cas de succès : stocke le JWT + le profil, et met à jour le signal `user`.
+   * En cas d'échec (401/403) : l'appelant reçoit l'erreur (voir Login.submit()).
+   */
+  login(login: string, motDePasse: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { login, motDePasse }).pipe(
+      tap((response) => {
+        const user: CurrentUser = {
+          id: response.user.id,
+          nom: `${response.user.prenom} ${response.user.nom}`.trim(),
+          role: response.user.role,
+          entrepriseId: response.user.entrepriseId,
+          login: response.user.login,
+        };
+        localStorage.setItem(TOKEN_KEY, response.token);
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        this.user.set(user);
+      })
+    );
   }
 
   logout(): void {
     this.user.set(null);
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  }
+
+  /** Lu par l'intercepteur HTTP pour poser le header Authorization. */
+  getToken(): string | null {
+    return localStorage.getItem(TOKEN_KEY);
   }
 
   /** ⭐ Vérifie si l'utilisateur courant possède l'un des rôles donnés. */
@@ -35,9 +54,9 @@ export class AuthService {
     return !!role && roles.includes(role);
   }
 
-  private restore(): CurrentUser | null {
+  private restoreUser(): CurrentUser | null {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(USER_KEY);
       return raw ? (JSON.parse(raw) as CurrentUser) : null;
     } catch {
       return null;
