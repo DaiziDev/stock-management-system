@@ -1,5 +1,6 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable, inject, signal } from "@angular/core";
+import { catchError, finalize, throwError } from 'rxjs';
 import { environment } from "../../../environments/environment";
 import { Article, ArticleRequest } from "../models/article.model";
 
@@ -11,10 +12,25 @@ export class ArticleService {
 
     private articlesSignal = signal<Article[]>([]);
     articles = this.articlesSignal.asReadonly();
+    readonly loading = signal(false);
+    readonly error = signal<string | null>(null);
 
     loadAll() {
+        this.loading.set(true);
+        this.error.set(null);
         this.http.get<Article[]>(this.apiUrl)
-        .subscribe(data => this.articlesSignal.set(data));
+        .pipe(
+            finalize(() => this.loading.set(false)),
+            catchError((error) => {
+                this.error.set('Impossible de charger les articles. Réessaie dans un instant.');
+                return throwError(() => error);
+            })
+        )
+        .subscribe({ next: (data) => this.articlesSignal.set(data) });
+    }
+
+    findById(id: number) {
+        return this.http.get<Article>(`${this.apiUrl}/${id}`);
     }
 
     create(dto: ArticleRequest) {

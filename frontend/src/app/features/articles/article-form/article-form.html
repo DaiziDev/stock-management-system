@@ -1,16 +1,21 @@
-<h1>{{ editId ? 'Modifier' : 'Nouvel' }} article</h1>
-<form [formGroup]="form" (ngSubmit)="enregistrer()">
-  <label>Code article<input formControlName="codeArticle"></label>
-  <label>Désignation<input formControlName="designation"></label>
-  <label>Prix HT<input type="number" formControlName="prixUnitaireHt"></label>
-  <label>TVA (%)<input type="number" formControlName="tauxTva"></label>
-  <label>Catégorie
-    <select formControlName="categorieId">
-      <option [value]="null" disabled>-- choisir --</option>
-      @for (c of categorieService.categories(); track c.id) {
-        <option [value]="c.id">{{ c.designation }}</option>
-      }
-    </select>
-  </label>
-  <button type="submit">{{ editId ? 'Enregistrer' : 'Créer' }}</button>
-</form>
+<section class="mx-auto max-w-4xl">
+  <a routerLink="/articles" class="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition hover:text-ink-800"><app-icon name="arrow-left" [size]="16" />Retour aux articles</a>
+  <div class="mb-7"><p class="mb-1 font-mono text-2xs uppercase tracking-[0.14em] text-gold-600">Catalogue</p><h1 class="font-display text-3xl font-[650] text-gray-900">{{ editId ? 'Modifier l’article' : 'Nouvel article' }}</h1><p class="mt-2 text-sm text-gray-600">{{ editId ? 'Mettez à jour les informations de votre article.' : 'Ajoutez un article à votre catalogue. Le stock initial est toujours de zéro.' }}</p></div>
+  @if (chargement) { <div class="rounded-md border border-line bg-surface p-8 text-center text-sm text-gray-600">Chargement de l’article…</div> } @else {
+    <form [formGroup]="form" (ngSubmit)="enregistrer()" class="overflow-hidden rounded-md border border-line bg-surface shadow-xs">
+      @if (erreur) { <div class="m-5 rounded-sm border border-danger/20 bg-danger-bg px-4 py-3 text-sm text-danger">{{ erreur }}</div> }
+      <div class="grid gap-x-6 gap-y-5 p-6 md:grid-cols-2">
+        <div class="md:col-span-2"><h2 class="text-base font-semibold text-gray-900">Informations générales</h2><p class="mt-1 text-xs text-gray-600">Les champs marqués d’un astérisque sont obligatoires.</p></div>
+        <label class="block"><span class="mb-1.5 block text-sm font-medium text-gray-700">Code article <span class="text-danger">*</span></span><input formControlName="codeArticle" placeholder="Ex. ART-0001" class="w-full rounded-sm border border-line bg-surface px-3 py-2.5 font-mono text-sm outline-none transition focus:border-ink-700 focus:shadow-xs" [class.border-danger]="form.controls.codeArticle.touched && form.controls.codeArticle.invalid" />@if (form.controls.codeArticle.touched && form.controls.codeArticle.invalid) { <span class="mt-1 block text-xs text-danger">Le code est obligatoire.</span> }</label>
+        <label class="block"><span class="mb-1.5 block text-sm font-medium text-gray-700">Catégorie <span class="text-danger">*</span></span><select formControlName="categorieId" class="w-full rounded-sm border border-line bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-ink-700 focus:shadow-xs" [class.border-danger]="form.controls.categorieId.touched && form.controls.categorieId.invalid"><option [ngValue]="null" disabled>Choisir une catégorie</option>@for (c of categorieService.categories(); track c.id) { <option [ngValue]="c.id">{{ c.designation }}</option> }</select>@if (form.controls.categorieId.touched && form.controls.categorieId.invalid) { <span class="mt-1 block text-xs text-danger">Choisissez une catégorie.</span> }</label>
+        <label class="block md:col-span-2"><span class="mb-1.5 block text-sm font-medium text-gray-700">Désignation <span class="text-danger">*</span></span><input formControlName="designation" placeholder="Ex. Eau minérale 1,5 L — pack de 6" class="w-full rounded-sm border border-line bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-ink-700 focus:shadow-xs" [class.border-danger]="form.controls.designation.touched && form.controls.designation.invalid" />@if (form.controls.designation.touched && form.controls.designation.invalid) { <span class="mt-1 block text-xs text-danger">La désignation est obligatoire.</span> }</label>
+        <label class="block md:col-span-2"><span class="mb-1.5 block text-sm font-medium text-gray-700">URL de la photo <span class="font-normal text-gray-400">(facultatif)</span></span><input type="url" formControlName="photo" placeholder="https://…" class="w-full rounded-sm border border-line bg-surface px-3 py-2.5 text-sm outline-none transition focus:border-ink-700 focus:shadow-xs" /></label>
+        <div class="mt-2 border-t border-line pt-6 md:col-span-2"><h2 class="text-base font-semibold text-gray-900">Prix et suivi du stock</h2><p class="mt-1 text-xs text-gray-600">Le prix TTC est calculé automatiquement par le serveur.</p></div>
+        <label class="block"><span class="mb-1.5 block text-sm font-medium text-gray-700">Prix unitaire HT <span class="text-danger">*</span></span><div class="relative"><input type="number" min="0" step="1" formControlName="prixUnitaireHt" class="w-full rounded-sm border border-line bg-surface px-3 py-2.5 pr-16 font-mono text-sm outline-none transition focus:border-ink-700 focus:shadow-xs" /><span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">FCFA</span></div></label>
+        <label class="block"><span class="mb-1.5 block text-sm font-medium text-gray-700">TVA <span class="text-danger">*</span></span><div class="relative"><input type="number" min="0" step="0.01" formControlName="tauxTva" class="w-full rounded-sm border border-line bg-surface px-3 py-2.5 pr-10 font-mono text-sm outline-none transition focus:border-ink-700 focus:shadow-xs" /><span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span></div></label>
+        <label class="block"><span class="mb-1.5 block text-sm font-medium text-gray-700">Seuil minimum <span class="font-normal text-gray-400">(facultatif)</span></span><input type="number" min="0" step="1" formControlName="seuilMin" placeholder="Ex. 20" class="w-full rounded-sm border border-line bg-surface px-3 py-2.5 font-mono text-sm outline-none transition focus:border-ink-700 focus:shadow-xs" /><span class="mt-1 block text-xs text-gray-400">Une alerte s’affichera lorsque le stock atteindra ce niveau.</span></label>
+      </div>
+      <div class="flex items-center justify-end gap-3 border-t border-line bg-surface-alt px-6 py-4"><a routerLink="/articles" class="rounded-sm px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-line">Annuler</a><button type="submit" [disabled]="form.invalid" class="inline-flex items-center gap-2 rounded-sm bg-ink-850 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition enabled:hover:bg-ink-800 disabled:cursor-not-allowed disabled:opacity-50"><app-icon name="check" [size]="16" />{{ editId ? 'Enregistrer les modifications' : 'Créer l’article' }}</button></div>
+    </form>
+  }
+</section>

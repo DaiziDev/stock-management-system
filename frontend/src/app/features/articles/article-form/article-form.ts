@@ -2,13 +2,15 @@ import { Component, inject, OnInit } from '@angular/core';
 import { ArticleService } from '../services/article-service';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CategorieService } from '../../categories/services/categorie-service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AppIcon } from '../../../shared/components/icon/icon';
+import type { ArticleRequest } from '../models/article.model';
 
 @Component({
   selector: 'app-article-form',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink, AppIcon],
   templateUrl: './article-form.html'
 })
 export class ArticleForm implements OnInit {
@@ -19,6 +21,8 @@ export class ArticleForm implements OnInit {
   private router = inject(Router);
 
   editId: number | null = null;
+  chargement = false;
+  erreur: string | null = null;
 
   form = this.fb.group({
     codeArticle: ['', Validators.required],
@@ -26,6 +30,7 @@ export class ArticleForm implements OnInit {
     prixUnitaireHt: [0, [Validators.required, Validators.min(0)]],
     tauxTva: [19.25, Validators.required],
     photo: [''],
+    seuilMin: [null as number | null, Validators.min(0)],
     categorieId: [null as number | null, Validators.required],
   });
 
@@ -38,20 +43,41 @@ export class ArticleForm implements OnInit {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       this.editId = Number(idParam);
-      this.articleService.loadAll();
-      const existant = this.articleService.articles().find(a => a.id === this.editId);
-      if (existant) {
-        this.form.patchValue({ ...existant, categorieId: existant.categorie.id });
-      }
+      this.chargement = true;
+      this.articleService.findById(this.editId).subscribe({
+        next: (existant) => {
+          this.form.patchValue({ ...existant, categorieId: existant.categorie.id });
+          this.chargement = false;
+        },
+        error: () => {
+          this.erreur = 'Cet article est introuvable ou n’est plus accessible.';
+          this.chargement = false;
+        },
+      });
     }
   }
 
   enregistrer() {
-    if (this.form.invalid) return;
-    const dto = this.form.getRawValue() as any;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    const raw = this.form.getRawValue();
+    const dto: ArticleRequest = {
+      codeArticle: raw.codeArticle ?? '',
+      designation: raw.designation ?? '',
+      prixUnitaireHt: Number(raw.prixUnitaireHt),
+      tauxTva: Number(raw.tauxTva),
+      photo: raw.photo?.trim() || null,
+      seuilMin: raw.seuilMin === null || raw.seuilMin === undefined ? null : Number(raw.seuilMin),
+      categorieId: Number(raw.categorieId),
+    };
     const action = this.editId
       ? this.articleService.update(this.editId, dto)
       : this.articleService.create(dto);
-    action.subscribe(() => this.router.navigate(['/articles']));
+    action.subscribe({
+      next: () => this.router.navigate(['/articles']),
+      error: (error) => this.erreur = error?.error?.message ?? 'Impossible d’enregistrer cet article.',
+    });
   }
 }

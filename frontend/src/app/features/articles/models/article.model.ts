@@ -11,6 +11,8 @@ export interface Article {
     tauxTva: number;
     prixUnitaireTtc: number;
     photo : string | null;
+    stockActuel: number;
+    seuilMin: number | null;
     categorie: CategorieSummary;
 }
 
@@ -20,5 +22,6 @@ export interface ArticleRequest {
     prixUnitaireHt: number;
     tauxTva: number;
     photo: string | null;
+    seuilMin: number | null;
     categorieId: number;
 }
