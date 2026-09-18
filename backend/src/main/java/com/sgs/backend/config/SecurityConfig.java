@@ -3,6 +3,7 @@ package com.sgs.backend.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,6 +30,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final UrlBasedCorsConfigurationSource corsConfigurationSource;
 
     /**
      * AuthenticationManager est requis par Spring Security pour
@@ -59,6 +61,13 @@ public class SecurityConfig {
             // Le CSRF protège contre les formulaires HTML volant des tokens de session
             // Comme on utilise JWT (pas de cookie de session), pas besoin
             .csrf(AbstractHttpConfigurer::disable)
+
+            // Activer le CORS AU NIVEAU SECURITY, en amont de l'autorisation :
+            // le preflight OPTIONS (sans header Authorization) est sinon rejeté
+            // 401 avant d'atteindre le CORS MVC -- "No 'Access-Control-Allow-Origin'
+            // header" sur tous les endpoints protégés depuis le navigateur.
+            // Le bean CorsConfigurationSource est défini dans CorsConfig.
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
             // Configurer les règles d'accès aux endpoints
             .authorizeHttpRequests(auth -> auth

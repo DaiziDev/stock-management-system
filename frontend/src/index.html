@@ -14,6 +14,22 @@
   >
 </head>
 <body>
+  <script>
+    // Anti-flash (FOUC) : pose la classe .dark AVANT le premier rendu, en
+    // reprenant la même logique que ThemeService (localStorage > OS). Le
+    // service Angular reprendra la main ensuite, sans à-coups.
+    (function () {
+      try {
+        var m = localStorage.getItem('sgs.theme');
+        var sombre =
+          m === 'dark' ||
+          (m !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (sombre) document.documentElement.classList.add('dark');
+      } catch (e) {
+        /* localStorage indisponible : thème clair par défaut */
+      }
+    })();
+  </script>
   <app-root></app-root>
 </body>
 </html>

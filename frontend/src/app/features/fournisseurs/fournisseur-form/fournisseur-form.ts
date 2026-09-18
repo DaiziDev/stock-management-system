@@ -1,13 +1,18 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FournisseurService } from '../services/fournisseur-service';
 import { FournisseurRequest } from '../models/fournisseur.model';
+import { AppIcon } from '../../../shared/components/icon/icon';
 
+/**
+ * Création / édition d'un fournisseur. Même structure que le client,
+ * sans le prénom (une entreprise, pas une personne physique).
+ */
 @Component({
   selector: 'app-fournisseur-form',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink, AppIcon],
   templateUrl: './fournisseur-form.html',
 })
 export class FournisseurForm implements OnInit {
@@ -17,6 +22,8 @@ export class FournisseurForm implements OnInit {
   private router = inject(Router);
 
   editId: number | null = null;
+  readonly envoiEnCours = signal(false);
+  readonly erreur = signal<string | null>(null);
 
   form = this.fb.group({
     nom: ['', Validators.required],
@@ -25,25 +32,44 @@ export class FournisseurForm implements OnInit {
     ville: [''],
     codePostal: [''],
     pays: [''],
-    mail: [''],
+    mail: ['', Validators.email],
     numTel: [''],
   });
 
-  ngOnInit() {
+  ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
-    if (idParam) {
-      this.editId = Number(idParam);
-      const existant = this.fournisseurService.fournisseurs().find((f) => f.id === this.editId);
-      if (existant) this.form.patchValue(existant);
-    }
+    if (!idParam) return;
+    this.editId = Number(idParam);
+    this.fournisseurService.loadAll().subscribe({
+      next: (liste) => {
+        const existant = liste.find((f) => f.id === this.editId);
+        if (existant) this.form.patchValue(existant);
+      },
+      error: () => this.erreur.set('Impossible de charger le fournisseur.'),
+    });
   }
 
-  enregistrer() {
-    if (this.form.invalid) return;
-    const dto = this.form.getRawValue() as FournisseurRequest;
+  enregistrer(): void {
+    if (this.form.invalid || this.envoiEnCours()) return;
+    this.envoiEnCours.set(true);
+    this.erreur.set(null);
+
+    const raw = this.form.getRawValue();
+    const dto = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [k, typeof v === 'string' && v.trim() === '' ? null : v])
+    ) as unknown as FournisseurRequest;
+
     const action = this.editId
       ? this.fournisseurService.update(this.editId, dto)
       : this.fournisseurService.create(dto);
-    action.subscribe(() => this.router.navigate(['/fournisseurs']));
+
+    action.subscribe({
+      next: () => this.router.navigate(['/fournisseurs']),
+      error: (err) => {
+        this.envoiEnCours.set(false);
+        const msg = (err?.error?.message as string) ?? null;
+        this.erreur.set(msg ?? 'Enregistrement impossible. Vérifiez les champs et réessayez.');
+      },
+    });
   }
 }

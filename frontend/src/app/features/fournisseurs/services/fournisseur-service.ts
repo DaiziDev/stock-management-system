@@ -1,4 +1,5 @@
 import { HttpClient } from "@angular/common/http";
+import { Observable, finalize, tap } from "rxjs";
 import { Injectable, inject, signal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { Fournisseur, FournisseurRequest } from "../models/fournisseur.model";
@@ -11,9 +12,15 @@ export class FournisseurService {
     private fournisseursSignal = signal<Fournisseur[]>([]);
     fournisseurs = this.fournisseursSignal.asReadonly();
 
-    loadAll() {
-        this.http.get<Fournisseur[]>(this.apiUrl)
-        .subscribe(data => this.fournisseursSignal.set(data));
+    /** Vrai pendant la requête de liste -- consommé par les écrans. */
+    readonly chargement = signal(false);
+
+    loadAll(): Observable<Fournisseur[]> {
+        this.chargement.set(true);
+        return this.http.get<Fournisseur[]>(this.apiUrl).pipe(
+            tap((data) => this.fournisseursSignal.set(data)),
+            finalize(() => this.chargement.set(false))
+        );
     }
 
     create(dto: FournisseurRequest) {

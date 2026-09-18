@@ -1,17 +1,61 @@
-import { computed, inject, Injectable } from "@angular/core";
-import { CategorieService } from "../../categories/services/categorie-service";
-import { ArticleService } from "../../articles/services/article-service";
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { catchError, forkJoin, map, of } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import {
+  type ArticleStockDTO,
+  type DashboardKpis,
+  type VenteListe,
+} from '../models/dashboard.models';
 
-@Injectable({providedIn: 'root'})
+/**
+ * Accès API du tableau de bord d'entreprise. Combine trois sources réelles :
+ * - GET /api/dashboard/kpis   : KPIs agrégés côté backend (tenant-scopé) ;
+ * - GET /api/stock/alertes    : articles sous leur seuil ;
+ * - GET /api/ventes           : ventes (pour la série CA des 7 jours).
+ *
+ * Un endpoint en erreur (ex: 403 pour un VENDEUR sur /kpis) ne bloque pas
+ * les autres : la source tombe sur une valeur par défaut.
+ */
+@Injectable({ providedIn: 'root' })
 export class DashboardService {
-    private categorieService = inject(CategorieService);
-    private articleService = inject(ArticleService);
+  private http = inject(HttpClient);
+  private apiUrl = `${environment.apiUrl}/dashboard`;
+  private stockUrl = `${environment.apiUrl}/stock`;
+  private ventesUrl = `${environment.apiUrl}/ventes`;
 
-    totalCategories = computed(() => this.categorieService.categories().length);
-    totalArticles = computed(() => this.articleService.articles().length);
+  /** Charge les 3 sources en parallèle, tolérante aux échecs partiels. */
+  chargerTout() {
+    return forkJoin({
+      kpis: this.http
+        .get<DashboardKpis>(`${this.apiUrl}/kpis`)
+        .pipe(catchError(() => of<DashboardKpis | null>(null))),
+      alertes: this.http
+        .get<ArticleStockDTO[]>(`${this.stockUrl}/alertes`)
+        .pipe(catchError(() => of<ArticleStockDTO[]>([]))),
+      ventes: this.http
+        .get<VenteListe[]>(`${this.ventesUrl}`)
+        .pipe(catchError(() => of<VenteListe[]>([]))),
+    });
+  }
 
-    chargerDonnees() {
-        this.categorieService.loadAll();
-        this.articleService.loadAll();
+  /**
+   * CA par jour sur les 7 derniers jours (index 0 = J-6 ... 6 = aujourd'hui),
+   * à partir des ventes fournies (total TTC par vente, dateVente ISO).
+   */
+  calculerSerieCA(ventes: VenteListe[]): number[] {
+    const serie = Array(7).fill(0) as number[];
+    const aujourdhui = new Date();
+    aujourdhui.setHours(0, 0, 0, 0);
+
+    for (const v of ventes) {
+      const d = new Date(v.dateVente);
+      if (Number.isNaN(d.getTime())) continue;
+      const ecartJours = Math.floor((aujourdhui.getTime() - d.setHours(0, 0, 0, 0)) / 86_400_000);
+      if (ecartJours >= 0 && ecartJours < 7) {
+        serie[6 - ecartJours] += Number(v.total ?? 0);
+      }
     }
+    return serie;
+  }
 }

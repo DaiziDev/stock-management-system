@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { Layout } from './core/layout/layout/layout';
 
 @Component({
@@ -8,5 +8,4 @@ import { Layout } from './core/layout/layout/layout';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
-}
+export class App {}

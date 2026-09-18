@@ -2,6 +2,7 @@ package com.sgs.backend.common;
 
 import com.sgs.backend.mvtStk.StockInsuffisantException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -72,6 +73,24 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT.value(),
                 "Conflict",
                 ex.getMessage(),
+                req.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // Violation de contrainte en base (nom d'entreprise unique, login unique,
+    // FK...) -> 409. Sans ce handler, Spring renvoyait un 500 au corps VIDE :
+    // le frontend ne pouvait pas afficher pourquoi l'onboarding échouait.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
+        String message = ex.getMostSpecificCause().getMessage() != null
+                ? ex.getMostSpecificCause().getMessage()
+                : "Conflit de données : cette ressource existe déjà ou viole une contrainte.";
+        ApiError error = new ApiError(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                message,
                 req.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);

@@ -105,7 +105,8 @@ public class AuthController {
                 utilisateur.getPrenom(),
                 utilisateur.getLogin(),
                 utilisateur.getRole(),
-                utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getId() : null
+                utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getId() : null,
+                utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getNom() : null
         );
 
         return ResponseEntity.ok(new LoginResponse(token, userInfo));
@@ -133,10 +134,25 @@ public class AuthController {
             @Valid @RequestBody RegisterRequest request,
             @AuthenticationPrincipal UserDetails currentUser
     ) {
-        // Vérifier que l'utilisateur connecté est bien un ADMIN
-        Utilisateur admin = utilisateurService.findByLogin(currentUser.getUsername());
-        if (admin.getRole() != UserRole.ADMIN) {
+        // Seul un ADMIN (d'entreprise) ou le SUPER_ADMIN (plateforme) peut
+        // créer des comptes. GESTIONNAIRE/VENDEUR sont refusés.
+        Utilisateur appelant = utilisateurService.findByLogin(currentUser.getUsername());
+        boolean estSuperAdmin = appelant.getRole() == UserRole.SUPER_ADMIN;
+        if (!estSuperAdmin && appelant.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Un ADMIN d'entreprise ne peut créer des comptes QUE dans SA propre
+        // entreprise : sinon l'admin de "DOVV Essos" pourrait s'auto-créer un
+        // compte ADMIN chez "Telcar" -- une fuite de l'isolation RG-10. Seul
+        // le SUPER_ADMIN (plateforme) peut onboarder un compte dans n'importe
+        // quelle entreprise : c'est son rôle (créer le premier ADMIN d'une
+        // entreprise cliente).
+        if (!estSuperAdmin) {
+            Long entrepriseAppelantId = appelant.getEntreprise() != null ? appelant.getEntreprise().getId() : null;
+            if (!request.entrepriseId().equals(entrepriseAppelantId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
         }
 
         // Vérifier que l'entreprise existe
@@ -171,7 +187,8 @@ public class AuthController {
                 saved.getPrenom(),
                 saved.getLogin(),
                 saved.getRole(),
-                saved.getEntreprise() != null ? saved.getEntreprise().getId() : null
+                saved.getEntreprise() != null ? saved.getEntreprise().getId() : null,
+                saved.getEntreprise() != null ? saved.getEntreprise().getNom() : null
         );
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -210,7 +227,8 @@ public class AuthController {
                 utilisateur.getMail(),
                 utilisateur.getNumTel(),
                 utilisateur.getRole(),
-                utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getId() : null
+                utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getId() : null,
+                utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getNom() : null
         ));
     }
 }

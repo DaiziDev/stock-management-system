@@ -5,5 +5,5 @@ import { ArticleForm } from './article-form/article-form';
 export const ARTICLE_ROUTES: Routes = [
   { path: '', component: ArticlieList },
   { path: 'nouveau', component: ArticleForm },
-  { path: ':id/edifier', component: ArticleForm },
+  { path: ':id/editer', component: ArticleForm },
 ];

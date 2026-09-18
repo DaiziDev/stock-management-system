@@ -9,8 +9,9 @@ import com.sgs.backend.roles.UserRole;
  * - Le token JWT à stocker côté frontend (localStorage)
  * - Les infos utilisateur (sans le mot de passe) pour l'affichage
  *
- * Le frontend stocke le token et l'envoie dans chaque requête :
- *   Authorization: Bearer <token>
+ * entrepriseNom est fourni pour l'affichage dans la navbar -- le tenant
+ * n'a pas besoin d'appeler GET /api/entreprises (réservé au SUPER_ADMIN)
+ * juste pour connaître son propre nom.
  */
 public record LoginResponse(
         String token,
@@ -19,6 +20,7 @@ public record LoginResponse(
     /**
      * Informations utilisateur minimales renvoyées au frontend.
      * Pas de mot de passe, pas de données sensibles.
+     * entrepriseId/entrepriseNom sont null pour le SUPER_ADMIN (plateforme).
      */
     public record UserInfo(
             Long id,
@@ -26,6 +28,7 @@ public record LoginResponse(
             String prenom,
             String login,
             UserRole role,
-            Long entrepriseId
+            Long entrepriseId,
+            String entrepriseNom
     ) {}
 }
