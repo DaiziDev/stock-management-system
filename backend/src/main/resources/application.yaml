@@ -5,7 +5,9 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/stock_db}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    # Plus de mot de passe par défaut : requis via la variable d'environnement
+    # DB_PASSWORD (voir .env.example). L'application refuse de démarrer sans.
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -13,12 +15,12 @@ spring:
       ddl-auto: update
     show-sql: true
     defer-datasource-initialization: true
-  sql:
-    init:
-      mode: always
     properties:
       hibernate:
         format_sql: true
+  sql:
+    init:
+      mode: always
 
   mail:
     host: smtp.gmail.com
@@ -33,9 +35,38 @@ spring:
             enable: true
 
 # JWT Configuration
+# Le secret n'a PAS de valeur par défaut : il est requis via la variable
+# d'environnement JWT_SECRET (clé HMAC-SHA256 encodée en Base64, >= 32 octets).
+# Générer une clé :  openssl rand -base64 48
 jwt:
-  secret: c2dzLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1nZW5lcmF0aW9uLTIwMjYtc3VwZXItc2VjdXJl
-  expiration: 86400000  # 24 heures en millisecondes
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION_MS:86400000}  # 24 heures en millisecondes
+
+# Compte administrateur de bootstrap (créé au premier démarrage si absent).
+# ADMIN_PASSWORD n'a PAS de valeur par défaut : requis via l'environnement,
+# sinon l'application refuse de démarrer (DataInitializer).
+# Générer un mot de passe fort :  openssl rand -base64 24
+app:
+  bootstrap:
+    admin-login: ${ADMIN_LOGIN:admin@sgs.local}
+    admin-password: ${ADMIN_PASSWORD}
+    admin-role: ${ADMIN_ROLE:ADMIN}
+
+  # Rate limiting du login (anti brute force) — LoginRateLimitFilter.
+  # Apres N echecs par IP dans la fenetre, toute nouvelle tentative recoit
+  # un 429 (avec Retry-After) jusqu'a expiration de la fenetre. Une
+  # connexion reussie remet le compteur a zero.
+  # Surchargeable par env : RATE_LIMIT_LOGIN_MAX_FAILURES / RATE_LIMIT_LOGIN_WINDOW_SECONDS.
+  rate-limit:
+    login:
+      max-failures: ${RATE_LIMIT_LOGIN_MAX_FAILURES:5}
+      window-seconds: ${RATE_LIMIT_LOGIN_WINDOW_SECONDS:300}
+
+  # Origines autorisees a appeler l'API depuis un navigateur (CORS).
+  # Defaut : serveurs de dev front (Angular :4200, Vite/React :5173).
+  # En production, surcharger via CORS_ALLOWED_ORIGINS.
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:5173}
 
 server:
   port: 8081

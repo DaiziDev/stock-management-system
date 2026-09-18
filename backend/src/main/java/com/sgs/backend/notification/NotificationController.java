@@ -5,6 +5,8 @@ import com.sgs.backend.stock.StockService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +34,7 @@ public class NotificationController {
     private final StockService stockService;
 
     @GetMapping
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(summary = "📋 Notifications actives")
     public ResponseEntity<List<NotificationDTO>> findAll() {
         List<NotificationDTO> notifications = stockService.alertes().stream()

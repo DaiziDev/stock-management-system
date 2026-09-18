@@ -22,5 +22,12 @@ public record UtilisateurUpdateDTO(
         String numTel,
 
         @NotNull(message = "le rôle est obligatoire")
-        UserRole role
+        UserRole role,
+
+        // Boolean (et non boolean) + @NotNull : un JSON qui omettrait le champ
+        // désérialiserait un primitif à false et désactiverait le compte
+        // par surprise. Avec @NotNull, l'oubli est une 400, pas une perte
+        // d'accès silencieuse.
+        @NotNull(message = "l'état d'activation est obligatoire (actif: true/false)")
+        Boolean actif
 ) {}

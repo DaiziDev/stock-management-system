@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,24 +26,28 @@ public class CommandeFournisseurController {
     private final CommandeFournisseurService commandeFournisseurService;
 
     @GetMapping
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "📋 Lister les commandes fournisseur")
     public ResponseEntity<List<CommandeFournisseurResponseDTO>> findAll() {
         return ResponseEntity.ok(commandeFournisseurService.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "🔍 Détail d'une commande fournisseur")
     public ResponseEntity<CommandeFournisseurResponseDTO> findById(@PathVariable Long id) {
         return ResponseEntity.ok(commandeFournisseurService.findById(id));
     }
 
     @PostMapping
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "➕ Créer une commande fournisseur", description = "Commande + lignes en une seule requête, statut initial EN_ATTENTE.")
     public ResponseEntity<CommandeFournisseurResponseDTO> create(@Valid @RequestBody CommandeFournisseurRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(commandeFournisseurService.create(dto));
     }
 
     @PutMapping("/{id}/receptionner")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "📥 Réceptionner la commande", description = "Génère une entrée de stock par ligne. Refusé si déjà reçue.")
     public ResponseEntity<CommandeFournisseurResponseDTO> receptionner(
             @Parameter(description = "ID de la commande") @PathVariable Long id
@@ -50,6 +56,7 @@ public class CommandeFournisseurController {
     }
 
     @PutMapping("/{id}/annuler")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "🚫 Annuler la commande", description = "Possible uniquement tant que la commande est EN_ATTENTE.")
     public ResponseEntity<CommandeFournisseurResponseDTO> annuler(
             @Parameter(description = "ID de la commande") @PathVariable Long id

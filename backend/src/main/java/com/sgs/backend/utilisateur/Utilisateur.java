@@ -42,6 +42,20 @@ public class Utilisateur extends AbstractEntity {
     @Column(name = "role", nullable = false)
     private UserRole role;
 
+    /**
+     * Compte activé ou désactivé. false = le compte ne peut plus ni se
+     * connecter ni utiliser un token encore valide (contrôlé à chaque
+     * requête par JwtAuthFilter via UserDetails.isEnabled()).
+     *
+     * Le DEFAULT true en base est nécessaire : quand ddl-auto=update ajoute
+     * la colonne sur une table qui contient déjà des lignes, PostgreSQL
+     * exige une valeur par défaut, sinon l'ALTER échoue (valeurs NULL).
+     * Un ADMIN qui se voit désactiver son propre compte par défaut est
+     * arrêté par la garde du service, pas par ce défaut.
+     */
+    @Column(name = "actif", nullable = false, columnDefinition = "boolean not null default true")
+    private boolean actif = true;
+
     @ManyToOne
     @JoinColumn(name = "identreprise")
     private Entreprise entreprise;

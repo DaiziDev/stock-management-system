@@ -1,6 +1,6 @@
 package com.sgs.backend.utilisateur;
 
-import com.sgs.backend.roles.UserRole;
+import com.sgs.backend.config.SecurityRoles;
 import com.sgs.backend.utilisateur.dto.UtilisateurResponseDTO;
 import com.sgs.backend.utilisateur.dto.UtilisateurUpdateDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -8,8 +8,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -20,15 +20,22 @@ import java.util.List;
  * Réservé aux ADMIN -- la création reste sur POST /api/auth/register
  * (qui applique déjà cette même vérification), ce controller ne couvre que
  * lister/consulter/modifier/supprimer un compte de la même entreprise.
- * Pas de @PreAuthorize ici : ce codebase n'utilise pas encore
- * l'autorisation par annotation, on reste sur le même style de vérification
- * manuelle que le reste du code (AuthController.register).
+ *
+ * Le @PreAuthorize est posé au niveau de la CLASSE : toutes les méthodes sont
+ * réservées au même rôle, et une méthode ajoutée plus tard hérite de la règle
+ * au lieu de partir sans protection.
+ *
+ * L'appartenance à l'entreprise reste vérifiée méthode par méthode (via
+ * l'entrepriseId de l'utilisateur courant) : @PreAuthorize répond à "quel
+ * rôle ?", pas à "quel tenant ?" — un ADMIN d'une autre entreprise passe le
+ * contrôle de rôle et doit être arrêté par le filtrage multi-tenant.
  */
 @RestController
 @RequestMapping("/api/utilisateurs")
 @RequiredArgsConstructor
 @Tag(name = "👥 Utilisateurs", description = "Gestion des comptes (ADMIN uniquement)")
 @SecurityRequirement(name = "bearerAuth")
+@PreAuthorize(SecurityRoles.ADMIN)
 public class UtilisateurController {
 
     private final UtilisateurService utilisateurService;
@@ -37,9 +44,6 @@ public class UtilisateurController {
     @Operation(summary = "📋 Lister les utilisateurs de mon entreprise")
     public ResponseEntity<List<UtilisateurResponseDTO>> findAll(@AuthenticationPrincipal UserDetails currentUser) {
         Utilisateur moi = utilisateurService.findByLogin(currentUser.getUsername());
-        if (moi.getRole() != UserRole.ADMIN) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
         List<UtilisateurResponseDTO> utilisateurs = utilisateurService.findAllByEntreprise(moi.getEntreprise().getId())
                 .stream()
                 .map(this::toResponseDTO)
@@ -51,9 +55,6 @@ public class UtilisateurController {
     @Operation(summary = "🔍 Détail d'un utilisateur")
     public ResponseEntity<UtilisateurResponseDTO> findById(@PathVariable Long id, @AuthenticationPrincipal UserDetails currentUser) {
         Utilisateur moi = utilisateurService.findByLogin(currentUser.getUsername());
-        if (moi.getRole() != UserRole.ADMIN) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
         return ResponseEntity.ok(toResponseDTO(utilisateurService.findByIdAndEntreprise(id, moi.getEntreprise().getId())));
     }
 
@@ -65,10 +66,7 @@ public class UtilisateurController {
             @AuthenticationPrincipal UserDetails currentUser
     ) {
         Utilisateur moi = utilisateurService.findByLogin(currentUser.getUsername());
-        if (moi.getRole() != UserRole.ADMIN) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        Utilisateur updated = utilisateurService.update(id, moi.getEntreprise().getId(), dto);
+        Utilisateur updated = utilisateurService.update(id, moi.getEntreprise().getId(), dto, moi);
         return ResponseEntity.ok(toResponseDTO(updated));
     }
 
@@ -76,9 +74,6 @@ public class UtilisateurController {
     @Operation(summary = "🗑️ Supprimer un utilisateur")
     public ResponseEntity<Void> delete(@PathVariable Long id, @AuthenticationPrincipal UserDetails currentUser) {
         Utilisateur moi = utilisateurService.findByLogin(currentUser.getUsername());
-        if (moi.getRole() != UserRole.ADMIN) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
         utilisateurService.delete(id, moi.getEntreprise().getId());
         return ResponseEntity.noContent().build();
     }
@@ -91,7 +86,8 @@ public class UtilisateurController {
                 utilisateur.getLogin(),
                 utilisateur.getMail(),
                 utilisateur.getNumTel(),
-                utilisateur.getRole()
+                utilisateur.getRole(),
+                utilisateur.isActif()
         );
     }
 }

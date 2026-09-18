@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,24 +26,28 @@ public class CommandeClientController {
     private final CommandeClientService commandeClientService;
 
     @GetMapping
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "📋 Lister les commandes client")
     public ResponseEntity<List<CommandeClientResponseDTO>> findAll() {
         return ResponseEntity.ok(commandeClientService.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "🔍 Détail d'une commande client")
     public ResponseEntity<CommandeClientResponseDTO> findById(@PathVariable Long id) {
         return ResponseEntity.ok(commandeClientService.findById(id));
     }
 
     @PostMapping
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "➕ Créer une commande client", description = "Commande + lignes en une seule requête, statut initial EN_COURS.")
     public ResponseEntity<CommandeClientResponseDTO> create(@Valid @RequestBody CommandeClientRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(commandeClientService.create(dto));
     }
 
     @PutMapping("/{id}/valider")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "✅ Valider la commande", description = "Génère une sortie de stock par ligne. Refusé si le stock est insuffisant (409).")
     public ResponseEntity<CommandeClientResponseDTO> valider(
             @Parameter(description = "ID de la commande") @PathVariable Long id
@@ -50,6 +56,7 @@ public class CommandeClientController {
     }
 
     @PutMapping("/{id}/annuler")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "🚫 Annuler la commande", description = "Possible uniquement tant que la commande est EN_COURS.")
     public ResponseEntity<CommandeClientResponseDTO> annuler(
             @Parameter(description = "ID de la commande") @PathVariable Long id

@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
+
 import javax.crypto.SecretKey;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +35,9 @@ public class JwtUtil {
 
     @Value("${jwt.expiration}")
     private long jwtExpiration; // en millisecondes
+
+    /** HMAC-SHA256 : taille minimale du secret après décodage Base64 (256 bits). */
+    private static final int MIN_SECRET_BYTES = 32;
 
     // ───────────── Extraction ─────────────
 
@@ -120,8 +126,37 @@ public class JwtUtil {
     // ───────────── Privé ─────────────
 
     /**
-     * La clé de signature est dérivée du secret configuré dans application.yaml.
-     * HMAC-SHA256 nécessite une clé d'au moins 256 bits (32 octets).
+     * Contrôle fail-fast au démarrage : le secret doit être présent, décodable
+     * en Base64 et assez long pour HMAC-SHA256.
+     *
+     * Depuis que jwt.secret n'a plus de valeur par défaut committée dans
+     * application.yaml, un démarrage sans la variable d'environnement
+     * JWT_SECRET échoue de toute façon (placeholder non résoluble) — mais avec
+     * un message peu explicite. Ce contrôle donne la cause exacte et la
+     * commande pour générer une clé valide.
+     */
+    @PostConstruct
+    void validateSecret() {
+        byte[] keyBytes;
+        try {
+            keyBytes = Base64.getDecoder().decode(secretKey);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException(
+                    "JWT_SECRET absent ou invalide : une clé encodée en Base64 est requise. "
+                            + "Générer une clé : openssl rand -base64 48");
+        }
+        if (keyBytes.length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException(String.format(
+                    "JWT_SECRET trop court : %d octets après décodage Base64, "
+                            + "%d requis pour HMAC-SHA256. "
+                            + "Générer une clé : openssl rand -base64 48",
+                    keyBytes.length, MIN_SECRET_BYTES));
+        }
+    }
+
+    /**
+     * La clé de signature est dérivée du secret configuré dans application.yaml
+     * (variable d'environnement JWT_SECRET — plus de valeur par défaut committée).
      */
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);

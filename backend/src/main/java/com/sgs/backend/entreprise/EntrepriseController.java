@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +27,14 @@ public class EntrepriseController {
     private final EntrepriseService entrepriseService;
 
     @GetMapping
+    @PreAuthorize(SecurityRoles.ADMIN)
     @Operation(summary = "📋 Lister toutes les entreprises")
     public ResponseEntity<List<EntrepriseResponseDTO>> findAll() {
         return ResponseEntity.ok(entrepriseService.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(SecurityRoles.ADMIN)
     @Operation(summary = "🔍 Détail d'une entreprise")
     public ResponseEntity<EntrepriseResponseDTO> findById(
             @Parameter(description = "ID de l'entreprise") @PathVariable Long id
@@ -39,6 +43,7 @@ public class EntrepriseController {
     }
 
     @PostMapping
+    @PreAuthorize(SecurityRoles.ADMIN)
     @Operation(summary = "➕ Créer une entreprise")
     public ResponseEntity<EntrepriseResponseDTO> create(
             @Parameter(description = "Données de l'entreprise", required = true)
@@ -49,6 +54,7 @@ public class EntrepriseController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(SecurityRoles.ADMIN)
     @Operation(summary = "✏️ Modifier une entreprise")
     public ResponseEntity<EntrepriseResponseDTO> update(
             @Parameter(description = "ID de l'entreprise") @PathVariable Long id,
@@ -59,6 +65,7 @@ public class EntrepriseController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize(SecurityRoles.ADMIN)
     @Operation(summary = "🗑️ Supprimer une entreprise")
     @ApiResponse(responseCode = "204", description = "✅ Entreprise supprimée")
     public ResponseEntity<Void> delete(

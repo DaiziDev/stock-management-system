@@ -1,6 +1,7 @@
 package com.sgs.backend.utilisateur;
 
 import com.sgs.backend.common.ResourceNotFoundException;
+import com.sgs.backend.roles.UserRole;
 import com.sgs.backend.utilisateur.dto.UtilisateurUpdateDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -55,14 +56,15 @@ public class UtilisateurService implements UserDetailsService {
         //   - login comme username
         //   - motDePasse hashé
         //   - rôles
-        //   - true = le compte est actif
-        //   - true = le compte n'est pas expiré
-        //   - true = le mot de passe n'est pas expiré
-        //   - true = le compte n'est pas verrouillé
+        //   - isEnabled = utilisateur.actif — un compte désactivé est refusé
+        //     au login (DisabledException -> 403) ET à chaque requête (voir
+        //     JwtAuthFilter, qui recontrôle isEnabled()).
+        //   - les trois flags d'expiration/verrouillage restent true : aucune
+        //     politique de péremption de compte ou de mot de passe à ce jour.
         return new User(
                 utilisateur.getLogin(),
                 utilisateur.getMotDePasse(),
-                true, true, true, true,
+                utilisateur.isActif(), true, true, true,
                 authorities
         );
     }
@@ -119,13 +121,54 @@ public class UtilisateurService implements UserDetailsService {
         return utilisateur;
     }
 
-    public Utilisateur update(Long id, Long entrepriseId, UtilisateurUpdateDTO dto) {
+    /**
+     * Mise à jour d'un utilisateur par un ADMIN de la même entreprise.
+     *
+     * Deux gardes de sécurité, pensées pour éviter un auto-enfermement :
+     *   1. Pas d'action suicidaire sur son propre compte : un ADMIN qui
+     *      désactive son compte ou se retire son rôle ADMIN ferme l'accès
+     *      admin à tout le monde s'il est seul — refusé systématiquement.
+     *   2. Invariant « dernier admin actif » : une opération qui retirerait
+     *      son statut d'admin ACTIF au dernier administrateur actif de
+     *      l'entreprise est refusée. Via ce endpoint, l'appelant étant lui
+     *     -même un admin actif, la garde 1 couvre déjà le cas pratique ;
+     *      celle-ci reste un filet pour les évolutions futures (endpoint
+     *      de désactivation en masse, changement de @PreAuthorize…).
+     */
+    public Utilisateur update(Long id, Long entrepriseId, UtilisateurUpdateDTO dto, Utilisateur appelant) {
         Utilisateur utilisateur = findByIdAndEntreprise(id, entrepriseId);
+
+        // Garde 1 : pas d'auto-sabotage du compte appelant.
+        if (utilisateur.getId().equals(appelant.getId())) {
+            if (!dto.actif()) {
+                throw new IllegalArgumentException(
+                        "Vous ne pouvez pas désactiver votre propre compte");
+            }
+            if (appelant.getRole() == UserRole.ADMIN && dto.role() != UserRole.ADMIN) {
+                throw new IllegalArgumentException(
+                        "Vous ne pouvez pas retirer votre propre rôle ADMIN");
+            }
+        }
+
+        // Garde 2 : invariant « dernier admin actif » de l'entreprise.
+        boolean perteDuStatutAdmin = utilisateur.getRole() == UserRole.ADMIN
+                && utilisateur.isActif()
+                && (dto.role() != UserRole.ADMIN || !dto.actif());
+        if (perteDuStatutAdmin) {
+            long adminsActifs = utilisateurRepository
+                    .countByEntrepriseIdAndRoleAndActifTrue(entrepriseId, UserRole.ADMIN);
+            if (adminsActifs <= 1) {
+                throw new IllegalArgumentException(
+                        "Impossible : c'est le dernier administrateur actif de l'entreprise");
+            }
+        }
+
         utilisateur.setNom(dto.nom());
         utilisateur.setPrenom(dto.prenom());
         utilisateur.setMail(dto.mail());
         utilisateur.setNumTel(dto.numTel());
         utilisateur.setRole(dto.role());
+        utilisateur.setActif(dto.actif());
         return utilisateurRepository.save(utilisateur);
     }
 

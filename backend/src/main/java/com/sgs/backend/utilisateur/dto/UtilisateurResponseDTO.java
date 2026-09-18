@@ -11,5 +11,6 @@ public record UtilisateurResponseDTO(
         String login,
         String mail,
         String numTel,
-        UserRole role
+        UserRole role,
+        boolean actif
 ) {}

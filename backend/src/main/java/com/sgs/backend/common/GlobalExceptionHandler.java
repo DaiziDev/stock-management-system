@@ -3,7 +3,9 @@ package com.sgs.backend.common;
 import com.sgs.backend.mvtStk.StockInsuffisantException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -46,6 +48,44 @@ public class GlobalExceptionHandler {
                 req.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // Rôle insuffisant pour l'action demandée : @PreAuthorize a refusé l'appel
+    // (ex. un VENDEUR qui tente POST /api/articles) -> 403.
+    // Sans ce handler la requête ressort jusqu'à ExceptionTranslationFilter, qui
+    // renvoie bien un 403 mais au format d'erreur par défaut de Spring — le
+    // frontend recevrait une forme de corps différente de tous les autres refus.
+    //
+    // 403 et non 401 : l'utilisateur EST authentifié (les requêtes anonymes sont
+    // déjà arrêtées en amont par `anyRequest().authenticated()`), c'est son rôle
+    // qui ne suffit pas. Se reconnecter n'y changerait rien.
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest req) {
+        ApiError error = new ApiError(
+                Instant.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                "Votre rôle ne vous autorise pas cette action",
+                req.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    // Compte désactivé (isEnabled() == false) au LOGIN : DaoAuthenticationProvider
+    // lève DisabledException une fois le mot de passe vérifié. 403 et non 401 :
+    // les identifiants sont bons — c'est l'état du compte qui interdit l'accès.
+    // (Sur les requêtes avec token, JwtAuthFilter n'authentifie pas les comptes
+    // désactivés ; la requête ressort en 401 "non authentifié" avant tout handler.)
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiError> handleDisabled(DisabledException ex, HttpServletRequest req) {
+        ApiError error = new ApiError(
+                Instant.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                "Compte désactivé. Contactez un administrateur.",
+                req.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     // Refus métier attendu : code déjà utilisé, statut de commande incompatible

@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +27,14 @@ public class ClientController {
     private final ClientService clientService;
 
     @GetMapping
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(summary = "📋 Lister tous les clients")
     public ResponseEntity<List<ClientResponseDTO>> findAll() {
         return ResponseEntity.ok(clientService.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(summary = "🔍 Détail d'un client")
     public ResponseEntity<ClientResponseDTO> findById(
             @Parameter(description = "ID du client") @PathVariable Long id
@@ -39,6 +43,7 @@ public class ClientController {
     }
 
     @PostMapping
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "➕ Créer un client")
     public ResponseEntity<ClientResponseDTO> create(
             @Parameter(description = "Données du client", required = true)
@@ -49,6 +54,7 @@ public class ClientController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "✏️ Modifier un client")
     public ResponseEntity<ClientResponseDTO> update(
             @Parameter(description = "ID du client") @PathVariable Long id,
@@ -59,6 +65,7 @@ public class ClientController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "🗑️ Supprimer un client")
     @ApiResponse(responseCode = "204", description = "✅ Client supprimé")
     public ResponseEntity<Void> delete(

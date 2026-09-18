@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +27,14 @@ public class CategorieController {
     private final CategorieService categorieService;
 
     @GetMapping
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(summary = "📋 Lister toutes les catégories")
     public ResponseEntity<List<CategorieResponseDTO>> findAll() {
         return ResponseEntity.ok(categorieService.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(summary = "🔍 Détail d'une catégorie")
     public ResponseEntity<CategorieResponseDTO> findById(
             @Parameter(description = "ID de la catégorie") @PathVariable Long id
@@ -39,6 +43,7 @@ public class CategorieController {
     }
 
     @PostMapping
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "➕ Créer une catégorie")
     public ResponseEntity<CategorieResponseDTO> create(
             @Parameter(description = "Données de la catégorie", required = true)
@@ -49,6 +54,7 @@ public class CategorieController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "✏️ Modifier une catégorie")
     public ResponseEntity<CategorieResponseDTO> update(
             @Parameter(description = "ID de la catégorie") @PathVariable Long id,
@@ -59,6 +65,7 @@ public class CategorieController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "🗑️ Supprimer une catégorie")
     @ApiResponse(responseCode = "204", description = "✅ Catégorie supprimée")
     public ResponseEntity<Void> delete(

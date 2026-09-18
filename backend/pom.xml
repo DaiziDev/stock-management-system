@@ -17,9 +17,22 @@
 
 	<properties>
 		<java.version>17</java.version>
+		<!-- Spring Boot 3.4.1 gère Lombok 1.18.36, incompatible avec JDK 25
+		     (support JDK 25 ajouté en 1.18.40) : l'annotation processor échouait
+		     silencieusement -> "cannot find symbol" sur tous les getters/setters. -->
+		<lombok.version>1.18.48</lombok.version>
 	</properties>
 
 	<dependencies>
+
+		<!-- .env pour le développement local : expose le fichier .env (gitigné)
+		     comme PropertySource Spring. Sans effet en production — les vraies
+		     variables d'environnement gardent la priorité, et l'absence de .env
+		     est ignorée (springdotenv.ignoreIfMissing=true par défaut). -->
+		<dependency>
+			<groupId>me.paulschwarz</groupId>
+			<artifactId>springboot3-dotenv</artifactId>
+		</dependency>
 
 		<!-- Web -->
 		<dependency>
@@ -96,10 +109,50 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- H2 (tests uniquement) : permet au test de contexte de démarrer
+		     sans PostgreSQL ni identifiants réels — les secrets étant devenus
+		     requis sans valeur par défaut. Rend aussi la suite de tests viable
+		     en CI. -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- Versions alignées pour les modules spring-dotenv (voir la
+			     dépendance springboot3-dotenv ci-dessus). -->
+			<dependency>
+				<groupId>me.paulschwarz</groupId>
+				<artifactId>spring-dotenv-bom</artifactId>
+				<version>5.1.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<!-- Depuis JDK 23, javac désactive l'annotation processing par
+					     défaut : sans -processorpath explicite, Lombok ne s'exécute
+					     jamais -> "cannot find symbol" sur tous les getters/setters. -->
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

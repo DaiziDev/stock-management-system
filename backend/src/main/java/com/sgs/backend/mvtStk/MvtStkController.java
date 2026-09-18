@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,7 @@ public class MvtStkController {
     private final MvtStkService mvtStkService;
 
     @GetMapping
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "📋 Historique des mouvements", description = "Filtrable par article et/ou par type.")
     public ResponseEntity<List<MvtStkResponseDTO>> findAll(
             @Parameter(description = "Filtrer par article") @RequestParam(required = false) Long articleId,
@@ -33,6 +36,7 @@ public class MvtStkController {
     }
 
     @PostMapping
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(
             summary = "➕ Ajustement manuel de stock",
             description = "Correction d'inventaire avec motif obligatoire. Quantité signée (+/-)."

@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +27,14 @@ public class ArticleController {
     private final ArticleService articleService;
 
     @GetMapping
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(summary = "📋 Lister tous les articles", description = "Retourne la liste complète des articles.")
     public ResponseEntity<List<ArticleResponseDTO>> findAll() {
         return ResponseEntity.ok(articleService.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(summary = "🔍 Détail d'un article", description = "Retourne un article par son ID.")
     public ResponseEntity<ArticleResponseDTO> findById(
             @Parameter(description = "ID de l'article") @PathVariable Long id
@@ -39,6 +43,7 @@ public class ArticleController {
     }
 
     @PostMapping
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "➕ Créer un article", description = "Ajoute un nouvel article au catalogue.")
     public ResponseEntity<ArticleResponseDTO> create(
             @Parameter(description = "Données de l'article", required = true)
@@ -49,6 +54,7 @@ public class ArticleController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "✏️ Modifier un article", description = "Met à jour les informations d'un article existant.")
     public ResponseEntity<ArticleResponseDTO> update(
             @Parameter(description = "ID de l'article") @PathVariable Long id,
@@ -59,6 +65,7 @@ public class ArticleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "🗑️ Supprimer un article", description = "Supprime un article du catalogue.")
     @ApiResponse(responseCode = "204", description = "✅ Article supprimé")
     public ResponseEntity<Void> delete(

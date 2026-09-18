@@ -7,7 +7,6 @@ import com.sgs.backend.config.dto.LoginResponse;
 import com.sgs.backend.config.dto.RegisterRequest;
 import com.sgs.backend.entreprise.Entreprise;
 import com.sgs.backend.entreprise.EntrepriseRepository;
-import com.sgs.backend.roles.UserRole;
 import com.sgs.backend.utilisateur.Utilisateur;
 import com.sgs.backend.utilisateur.UtilisateurService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -65,6 +65,7 @@ public class AuthController {
      * 4. On retourne le token + les infos utilisateur (sans le mot de passe)
      */
     @PostMapping("/login")
+    // Pas de @PreAuthorize : seul endpoint volontairement public (cf. SecurityConfig).
     @Operation(
             summary = "🔑 Connexion",
             description = "Authentifie un utilisateur avec son login et mot de passe. " +
@@ -119,6 +120,7 @@ public class AuthController {
      * Le mot de passe est hashé côté backend (jamais en clair en base).
      */
     @PostMapping("/register")
+    @PreAuthorize(SecurityRoles.ADMIN)
     @Operation(
             summary = "👤 Inscription (Admin uniquement)",
             description = "Crée un nouvel utilisateur. Réservé aux administrateurs.",
@@ -130,14 +132,11 @@ public class AuthController {
     )
     public ResponseEntity<LoginResponse> register(
             @Parameter(description = "Données du nouvel utilisateur", required = true)
-            @Valid @RequestBody RegisterRequest request,
-            @AuthenticationPrincipal UserDetails currentUser
+            @Valid @RequestBody RegisterRequest request
     ) {
-        // Vérifier que l'utilisateur connecté est bien un ADMIN
-        Utilisateur admin = utilisateurService.findByLogin(currentUser.getUsername());
-        if (admin.getRole() != UserRole.ADMIN) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+        // Le contrôle du rôle ADMIN est porté par @PreAuthorize ci-dessus :
+        // il s'exécute AVANT d'entrer dans la méthode, donc avant toute
+        // lecture en base — un non-admin n'atteint jamais ce code.
 
         // Vérifier que l'entreprise existe
         Entreprise entreprise = entrepriseRepository.findById(request.entrepriseId())
@@ -188,6 +187,7 @@ public class AuthController {
      * pour recharger le profil sans re-demander les identifiants.
      */
     @GetMapping("/me")
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(
             summary = "👤 Mon profil",
             description = "Retourne les informations de l'utilisateur connecté (déduit du token JWT).",

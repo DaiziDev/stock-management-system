@@ -4,6 +4,8 @@ import com.sgs.backend.dashboard.dto.DashboardKpisDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +22,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/kpis")
+    @PreAuthorize(SecurityRoles.GESTION)
     @Operation(summary = "📊 KPIs du tableau de bord", description = "Valeur du stock, alertes, commandes en cours, chiffre d'affaires du mois.")
     public ResponseEntity<DashboardKpisDTO> kpis() {
         return ResponseEntity.ok(dashboardService.kpis());

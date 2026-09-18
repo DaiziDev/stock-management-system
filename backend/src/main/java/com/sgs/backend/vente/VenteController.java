@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.sgs.backend.config.SecurityRoles;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,18 +25,21 @@ public class VenteController {
     private final VenteService venteService;
 
     @GetMapping
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(summary = "📋 Lister les ventes")
     public ResponseEntity<List<VenteResponseDTO>> findAll() {
         return ResponseEntity.ok(venteService.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(summary = "🔍 Détail d'une vente")
     public ResponseEntity<VenteResponseDTO> findById(@PathVariable Long id) {
         return ResponseEntity.ok(venteService.findById(id));
     }
 
     @PostMapping
+    @PreAuthorize(SecurityRoles.TOUS)
     @Operation(
             summary = "➕ Encaisser une vente",
             description = "Vente + lignes en une seule requête. Décrémente le stock immédiatement. " +
