@@ -17,9 +17,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Réservé aux ADMIN -- la création reste sur POST /api/auth/register
+ * Réservé aux ADMIN D'ENTREPRISE -- la création reste sur POST /api/auth/register
  * (qui applique déjà cette même vérification), ce controller ne couvre que
  * lister/consulter/modifier/supprimer un compte de la même entreprise.
+ * Le SUPER_ADMIN n'est PAS concerné : il n'appartient à aucune entreprise,
+ * il gère les comptes via le module plateforme (sinon entreprise.getId()
+ * serait null ici et ferait planter la requête).
  * Pas de @PreAuthorize ici : ce codebase n'utilise pas encore
  * l'autorisation par annotation, on reste sur le même style de vérification
  * manuelle que le reste du code (AuthController.register).

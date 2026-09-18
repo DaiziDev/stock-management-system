@@ -62,9 +62,9 @@
      Ex. : class="grid-cols-4 max-lg:grid-cols-2 max-sm:grid-cols-1"
 
    DARK MODE
-     Automatique : les tokens basculent selon les préférences de l'OS,
-     rien à faire. Ne jamais coder une couleur en dur dans un composant,
-     sinon elle ne basculera pas.
+     Piloté par la classe .dark sur <html> (ThemeService + bouton navbar) :
+     défaut = suit l'OS, choix manuel mémorisé. Ne jamais coder une couleur
+     en dur dans un composant, sinon elle ne basculera pas.
 
    CHANGER UNE VALEUR
      On modifie UNIQUEMENT ce fichier → toute l'app est mise à jour.
@@ -205,29 +205,40 @@
 
 /* =========================================================
    2. DARK MODE — les mêmes tokens, valeurs sombres.
-      Activé automatiquement selon les préférences de l'OS.
-      👉 Pour un interrupteur manuel plus tard : remplacer la
-      media query par @custom-variant dark + classe .dark.
+      Piloté par la classe .dark sur <html> (ThemeService) :
+      - défaut : suit la préférence de l'OS (system) ;
+      - l'utilisateur peut forcer clair/sombre depuis la navbar,
+      le choix est mémorisé dans localStorage.
+      👉 C'est la stratégie recommandée par la doc Tailwind v4 :
+      @custom-variant dark (&:where(.dark, .dark *)) pour les
+      utilitaires dark:* éventuels.
    ========================================================= */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-canvas: #0a1a1c;
-    --color-surface: #12282b;
-    --color-surface-alt: #0e2123;
-    --color-line: #21373a;
-    --color-gray-900: #e7efeb;
-    --color-gray-700: #b7c7c1;
-    --color-gray-600: #8ba19b;
-    --color-gray-400: #5f7570;
-    --color-gold-500: #dba94e;
-    --color-gold-100: #3a2f17;
-    --color-success: #38c473;
-    --color-success-bg: #12351f;
-    --color-danger: #ef6b5c;
-    --color-danger-bg: #3e1f1b;
-    --color-info: #6b9df0;
-    --color-info-bg: #172a45;
-  }
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --color-canvas: #0a1a1c;
+  --color-surface: #12282b;
+  --color-surface-alt: #0e2123;
+  --color-line: #21373a;
+  --color-gray-900: #e7efeb;
+  --color-gray-700: #b7c7c1;
+  --color-gray-600: #8ba19b;
+  --color-gray-400: #5f7570;
+  --color-gold-500: #dba94e;
+  --color-gold-100: #3a2f17;
+  --color-success: #38c473;
+  --color-success-bg: #12351f;
+  --color-danger: #ef6b5c;
+  --color-danger-bg: #3e1f1b;
+  --color-info: #6b9df0;
+  --color-info-bg: #172a45;
+  color-scheme: dark;
+}
+
+/* Sans la classe, l'app est claire même si l'OS est sombre :
+   c'est le "clair forcé" quand l'utilisateur choisit light. */
+:root:not(.dark) {
+  color-scheme: light;
 }
 
 /* =========================================================
@@ -265,5 +276,178 @@
       animation-duration: 0.001ms !important;
       transition-duration: 0.001ms !important;
     }
+  }
+}
+
+/* =========================================================
+   4. COMPOSANTS PARTAGÉS — kit de classes du design system
+   ---------------------------------------------------------
+   Les patterns répétés (champ de formulaire, boutons, cartes
+   KPI, tableaux) deviennent des classes utilitaires locales :
+   moins de duplication que des utilitaires Tailwind repris
+   dans chaque template, et un seul endroit pour les ajuster.
+   ========================================================= */
+@layer components {
+  .champ {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--color-line);
+    background: var(--color-surface);
+    padding: 0.75rem 0.875rem;
+    font-size: var(--text-base);
+    color: var(--color-gray-900);
+    transition: border-color 0.2s var(--ease-soft), box-shadow 0.2s var(--ease-soft);
+  }
+  .champ:focus {
+    outline: none;
+    border-color: var(--color-ink-700);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-ink-800) 10%, transparent);
+  }
+  .champ::placeholder {
+    color: var(--color-gray-400);
+  }
+  .champ:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .etiquette {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--color-gray-600);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1.25rem;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s var(--ease-soft);
+  }
+  .btn:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .btn-primaire {
+    background: var(--color-ink-850);
+    color: #fff;
+    box-shadow: var(--shadow-xs);
+  }
+  .btn-primaire:hover {
+    transform: translateY(-1px);
+    background: var(--color-ink-800);
+    box-shadow: var(--shadow-md);
+  }
+  .btn-or {
+    background: var(--color-gold-500);
+    color: var(--color-ink-950);
+    box-shadow: 0 4px 14px rgb(201 146 46 / 0.28);
+  }
+  .btn-or:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: 0 8px 22px rgb(201 146 46 / 0.38);
+  }
+  .btn-secondaire {
+    background: transparent;
+    color: var(--color-gray-600);
+    border: 1.5px solid var(--color-line);
+  }
+  .btn-secondaire:hover {
+    background: var(--color-surface-alt);
+    color: var(--color-ink-800);
+  }
+  .btn-danger {
+    background: transparent;
+    color: var(--color-danger);
+    border: 1.5px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+  }
+  .btn-danger:hover {
+    background: var(--color-danger-bg);
+  }
+
+  .carte {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .th {
+    border-bottom: 1px solid var(--color-line);
+    background: var(--color-surface-alt);
+    padding: 0.75rem 1.125rem;
+    text-align: left;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-gray-400);
+    white-space: nowrap;
+  }
+
+  .td {
+    padding: 0.875rem 1.125rem;
+    font-size: 13.6px;
+    vertical-align: middle;
+  }
+
+  .ligne-table:hover {
+    background: var(--color-surface-alt);
+  }
+
+  /* Badge de statut de commande — couleur pilotée par data-statut
+     (EN_COURS or, VALIDEE vert, ANNULEE rouge). Compatibilité dark mode
+     via les tokens sémantiques. */
+  .badge-statut {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 0.2rem 0.65rem;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-statut[data-statut='EN_COURS'] {
+    background: var(--color-gold-100);
+    color: var(--color-gold-600);
+  }
+  .badge-statut[data-statut='EN_ATTENTE'] {
+    background: var(--color-gold-100);
+    color: var(--color-gold-600);
+  }
+  .badge-statut[data-statut='VALIDEE'] {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+  .badge-statut[data-statut='RECUE'] {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+  .badge-statut[data-statut='ANNULEE'] {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+}
+
+/* =========================================================
+   5. UTILITAIRES DE SCROLL — masque les barres de défilement
+      des zones de navigation (sidebar) tout en gardant le
+      défilement fonctionnel (molette, tactile, clavier).
+   ========================================================= */
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;              /* Firefox */
+    -ms-overflow-style: none;           /* IE/Edge legacy */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;                      /* Chrome, Safari, Opera */
   }
 }

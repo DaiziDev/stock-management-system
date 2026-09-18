@@ -1,4 +1,5 @@
 import { HttpClient } from "@angular/common/http";
+import { Observable, finalize, tap } from "rxjs";
 import { Injectable, inject, signal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { Client, ClientRequest } from "../models/client.model";
@@ -11,9 +12,15 @@ export class ClientService {
     private clientsSignal = signal<Client[]>([]);
     clients = this.clientsSignal.asReadonly();
 
-    loadAll() {
-        this.http.get<Client[]>(this.apiUrl)
-        .subscribe(data => this.clientsSignal.set(data));
+    /** Vrai pendant la requête de liste -- consommé par les écrans. */
+    readonly chargement = signal(false);
+
+    loadAll(): Observable<Client[]> {
+        this.chargement.set(true);
+        return this.http.get<Client[]>(this.apiUrl).pipe(
+            tap((data) => this.clientsSignal.set(data)),
+            finalize(() => this.chargement.set(false))
+        );
     }
 
     create(dto: ClientRequest) {

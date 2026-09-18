@@ -5,5 +5,5 @@ import { CategorieForm } from './categorie-form/categorie-form';
 export const CATEGORIE_ROUTES: Routes = [
   { path: '', component: CategorieList },
   { path: 'nouveau', component: CategorieForm },
-  { path: ':id/edifier', component: CategorieForm },
+  { path: ':id/editer', component: CategorieForm },
 ];

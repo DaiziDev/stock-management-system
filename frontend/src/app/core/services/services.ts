@@ -1,8 +1,19 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import type { CurrentUser, LoginResponse, UserRole } from '../models/models';
+
+/** Forme de la réponse GET /api/auth/me (CurrentUserResponse côté backend). */
+interface MeResponse {
+  id: number;
+  nom: string;
+  prenom: string;
+  login: string;
+  role: UserRole;
+  entrepriseId: number | null;
+  entrepriseNom: string | null;
+}
 
 const TOKEN_KEY = 'sgs.token';
 const USER_KEY = 'sgs.currentUser';
@@ -28,12 +39,56 @@ export class AuthService {
           nom: `${response.user.prenom} ${response.user.nom}`.trim(),
           role: response.user.role,
           entrepriseId: response.user.entrepriseId,
+          entrepriseName: response.user.entrepriseNom,
           login: response.user.login,
         };
         localStorage.setItem(TOKEN_KEY, response.token);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         this.user.set(user);
       })
+    );
+  }
+
+  /**
+   * Resynchronise le profil local avec le backend (GET /api/auth/me).
+   *
+   * Indispensable car le localStorage peut contenir un profil PÉRIMÉ : par
+   * exemple le compte bootstrap promu ADMIN d'entreprise → SUPER_ADMIN par
+   * le DataInitializer. Sans resynchro, l'app croit encore au vieux rôle et
+   * envoie le superadmin sur l'espace entreprise au lieu de la console
+   * plateforme.
+   *
+   * Échoue silencieusement (token expiré, backend down...) : on garde le
+   * profil local et l'errorInterceptor déconnectera au prochain 401.
+   */
+  syncSession(): Observable<CurrentUser | null> {
+    // Pas de token = pas de session à synchroniser (évite un 401 systématique
+    // pour tout visiteur anonyme au chargement de l'app).
+    if (!this.getToken()) {
+      return of(null);
+    }
+    return this.http.get<MeResponse>(`${this.apiUrl}/me`).pipe(
+      tap({
+        next: (me) => {
+          const user: CurrentUser = {
+            id: me.id,
+            nom: `${me.prenom} ${me.nom}`.trim(),
+            role: me.role,
+            entrepriseId: me.entrepriseId,
+            entrepriseName: me.entrepriseNom,
+            login: me.login,
+          };
+          this.user.set(user);
+          localStorage.setItem(USER_KEY, JSON.stringify(user));
+        },
+        error: () => {
+          /* profil local conservé ; un 401 déclenchera la déconnexion via errorInterceptor */
+        },
+      }),
+      // La valeur retournée intéresse peu les appelants : on expose surtout
+      // l'effet de bord (signal + localStorage mis à jour).
+      map(() => this.user()),
+      catchError(() => of(null)),
     );
   }
 
@@ -52,6 +107,15 @@ export class AuthService {
   hasRole(...roles: UserRole[]): boolean {
     const role = this.user()?.role;
     return !!role && roles.includes(role);
+  }
+
+  /**
+   * Vrai pour l'opérateur de la plateforme (SUPER_ADMIN) : il n'appartient
+   * à aucune entreprise cliente et est dirigé vers la console plateforme
+   * (guards + redirection post-login).
+   */
+  isPlatformAdmin(): boolean {
+    return this.user()?.role === 'SUPER_ADMIN';
   }
 
   private restoreUser(): CurrentUser | null {

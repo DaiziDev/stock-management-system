@@ -3,11 +3,13 @@
  * Les rôles et la structure de navigation alimentent la sidebar et les guards.
  */
 
-export type UserRole = 'ADMIN' | 'VENDEUR' | 'GESTIONNAIRE';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'VENDEUR' | 'GESTIONNAIRE';
 
+/** Les rôles "à l'intérieur d'une entreprise cliente" (tenant). */
 export const ALL_ROLES: UserRole[] = ['ADMIN', 'VENDEUR', 'GESTIONNAIRE'];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
+  SUPER_ADMIN: 'Plateforme',
   ADMIN: 'Administrateur',
   VENDEUR: 'Vendeur',
   GESTIONNAIRE: 'Gestionnaire',
@@ -18,6 +20,7 @@ export interface CurrentUser {
   nom: string;
   role: UserRole;
   entrepriseId: number | null;
+  entrepriseName?: string | null;
   login?: string;
 }
 
@@ -31,6 +34,7 @@ export interface LoginResponse {
     login: string;
     role: UserRole;
     entrepriseId: number | null;
+    entrepriseNom: string | null;
   };
 }
 
@@ -51,8 +55,20 @@ export interface NavGroup {
 /**
  * Structure du menu — identique à la maquette (groupes + items),
  * enrichie d'un filtre `roles` pour le RBAC côté frontend.
+ *
+ * Deux espaces distincts partageant le même socle visuel :
+ * - groupe "Plateforme" : console de l'opérateur (SUPER_ADMIN uniquement) ;
+ * - les autres groupes : l'application d'entreprise (tenants), où le
+ *   SUPER_ADMIN n'a rien à faire (garde tenantGuard côté routes).
  */
 export const NAV: NavGroup[] = [
+  {
+    group: 'Plateforme',
+    items: [
+      { key: 'plateformeAccueil', label: "Vue d'ensemble", icon: 'layout-dashboard', route: '/plateforme', roles: ['SUPER_ADMIN'] },
+      { key: 'plateformeEntreprises', label: 'Entreprises clientes', icon: 'building-2', route: '/plateforme/entreprises', roles: ['SUPER_ADMIN'] },
+    ],
+  },
   {
     group: "Vue d'ensemble",
     items: [
@@ -70,7 +86,6 @@ export const NAV: NavGroup[] = [
   {
     group: 'Organisation',
     items: [
-      { key: 'entreprises', label: 'Entreprises', icon: 'building-2', route: '/entreprises', roles: ['ADMIN'] },
       { key: 'utilisateurs', label: 'Utilisateurs & rôles', icon: 'users', route: '/utilisateurs', roles: ['ADMIN'] },
     ],
   },

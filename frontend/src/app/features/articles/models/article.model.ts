@@ -12,6 +12,9 @@ export interface Article {
     prixUnitaireTtc: number;
     photo : string | null;
     categorie: CategorieSummary;
+
+    /** Niveau de stock temps réel (décrémenté à chaque vente côté backend). */
+    stockActuel?: number;
 }
 
 export interface ArticleRequest {

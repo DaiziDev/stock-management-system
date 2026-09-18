@@ -1,14 +1,22 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { SidebarService } from '../layout.service';
+import { AuthService } from '../../services/services';
+import { ThemeService } from '../../services/theme.service';
 import { AppIcon } from '../../../shared/components/icon/icon';
 
+/**
+ * Barre supérieure. La pill "entreprise" est alimentée par le nom réel
+ * renvoyé par le backend (LoginResponse.user.entrepriseNom) — plus aucune
+ * valeur codée en dur. Elle est masquée pour le SUPER_ADMIN : la console
+ * plateforme n'est rattachée à aucune entreprise cliente.
+ */
 @Component({
   selector: 'app-navbar',
   standalone: true,
   imports: [AppIcon],
   template: `
     <nav
-      class="fixed right-0 top-0 z-40 flex h-[66px] items-center gap-3.5 border-b border-line bg-canvas/85 px-7 backdrop-blur-[10px] transition-[left] duration-[350ms] ease-soft max-md:left-0 max-md:px-4"
+      class="fixed right-0 top-0 z-40 flex h-[66px] items-center gap-3.5 border-b border-line bg-canvas/85 pl-[calc(var(--sbw)+18px)] pr-7 backdrop-blur-[10px] transition-[left] duration-[350ms] ease-soft max-md:left-0 max-md:pl-4 max-md:pr-4"
     >
       <button
         type="button"
@@ -31,13 +39,31 @@ import { AppIcon } from '../../../shared/components/icon/icon';
       <div class="flex-1"></div>
 
       <div class="flex items-center gap-3">
+        @if (estTenant()) {
+          <button
+            type="button"
+            class="relative flex cursor-pointer items-center gap-2.5 rounded-[22px] border-[1.5px] border-line bg-surface py-[6px] pl-[9px] pr-[13px] text-sm font-semibold transition-colors duration-200 hover:border-ink-700"
+          >
+            <span class="h-[7px] w-[7px] rounded-full bg-success shadow-[0_0_0_2.5px_rgba(30,154,85,0.2)]"></span>
+            {{ entrepriseNom() }}
+            <app-icon name="chevron-down" [size]="13" class="text-gray-400" />
+          </button>
+        } @else {
+          <span
+            class="inline-flex items-center gap-2 rounded-[22px] border-[1.5px] border-gold-500/40 bg-gold-100 py-[6px] pl-[13px] pr-[13px] font-mono text-xs font-bold uppercase tracking-[0.08em] text-gold-600"
+          >
+            Console plateforme
+          </span>
+        }
+
         <button
           type="button"
-          class="relative flex cursor-pointer items-center gap-2.5 rounded-[22px] border-[1.5px] border-line bg-surface py-[6px] pl-[9px] pr-[13px] text-sm font-semibold transition-colors duration-200 hover:border-ink-700"
+          (click)="toggleTheme()"
+          [attr.aria-label]="estSombre() ? 'Passer en mode clair' : 'Passer en mode sombre'"
+          [title]="estSombre() ? 'Passer en mode clair' : 'Passer en mode sombre'"
+          class="flex h-[37px] w-[37px] items-center justify-center rounded-full text-gray-600 transition-colors duration-[180ms] hover:bg-surface-alt"
         >
-          <span class="h-[7px] w-[7px] rounded-full bg-success shadow-[0_0_0_2.5px_rgba(30,154,85,0.2)]"></span>
-          Bafoussam Trading Co
-          <app-icon name="chevron-down" [size]="13" class="text-gray-400" />
+          <app-icon [name]="estSombre() ? 'sun' : 'moon'" />
         </button>
 
         <button
@@ -54,6 +80,21 @@ import { AppIcon } from '../../../shared/components/icon/icon';
 })
 export class Navbar {
   private readonly sidebar = inject(SidebarService);
+  private readonly auth = inject(AuthService);
+  private readonly theme = inject(ThemeService);
+
+  /** Le pill entreprise n'a de sens que pour un compte d'entreprise. */
+  readonly estTenant = computed(() => this.auth.user()?.role !== 'SUPER_ADMIN');
+  readonly entrepriseNom = computed(
+    () => this.auth.user()?.entrepriseName ?? this.auth.user()?.nom ?? 'Entreprise'
+  );
+
+  /** Thème réellement affiché (résout le mode 'system' selon l'OS). */
+  readonly estSombre = this.theme.isDark;
+
+  toggleTheme(): void {
+    this.theme.setMode(this.theme.isDark() ? 'light' : 'dark');
+  }
 
   toggleSidebar(): void {
     this.sidebar.toggle();

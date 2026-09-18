@@ -5,5 +5,5 @@ import { ClientForm } from './client-form/client-form';
 export const CLIENT_ROUTES: Routes = [
   { path: '', component: ClientList },
   { path: 'nouveau', component: ClientForm },
-  { path: ':id/edifier', component: ClientForm },
+  { path: ':id/editer', component: ClientForm },
 ];

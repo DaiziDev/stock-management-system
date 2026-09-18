@@ -10,4 +10,7 @@ public interface CommandeClientRepository extends JpaRepository<CommandeClient, 
     List<CommandeClient> findByEntrepriseIdOrderByDateCommandeDesc(Long entrepriseId);
 
     long countByEntrepriseIdAndStatut(Long entrepriseId, StatutCommandeClient statut);
+
+    /** Commandes en cours, toutes entreprises confondues -- stats plateforme. */
+    long countByEntrepriseIsNotNullAndStatut(StatutCommandeClient statut);
 }

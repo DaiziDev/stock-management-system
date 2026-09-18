@@ -5,5 +5,5 @@ import { FournisseurForm } from './fournisseur-form/fournisseur-form';
 export const FOURNISSEUR_ROUTES: Routes = [
   { path: '', component: FournisseurList },
   { path: 'nouveau', component: FournisseurForm },
-  { path: ':id/edifier', component: FournisseurForm },
+  { path: ':id/editer', component: FournisseurForm },
 ];

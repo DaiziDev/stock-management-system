@@ -24,7 +24,7 @@ import { AppIcon } from '../../../shared/components/icon/icon';
         <span class="font-display text-lg font-[650] text-white">SGS</span>
       </div>
 
-      <nav class="sb-nav flex-1 overflow-y-auto px-3 py-2">
+      <nav class="sb-nav no-scrollbar flex-1 overflow-y-auto px-3 py-2">
         @for (group of visibleGroups(); track group.group) {
           <div class="sb-group-label px-3 pb-[7px] pt-[17px] font-mono text-2xs uppercase tracking-[0.13em] text-fog-700">{{ group.group }}</div>
           @for (item of group.items; track item.key) {

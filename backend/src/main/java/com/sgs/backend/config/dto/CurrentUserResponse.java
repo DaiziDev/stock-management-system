@@ -8,7 +8,9 @@ import com.sgs.backend.roles.UserRole;
  * Permet au frontend de récupérer les informations de l'utilisateur
  * connecté à partir de son token JWT (sans re-demander login/mot de passe).
  *
- * Utilisé lors du refresh de la page pour recharger le profil utilisateur.
+ * entrepriseNom évite au tenant d'appeler GET /api/entreprises (réservé au
+ * SUPER_ADMIN) juste pour afficher son nom dans la navbar.
+ * entrepriseId/entrepriseNom sont null pour le SUPER_ADMIN (plateforme).
  */
 public record CurrentUserResponse(
         Long id,
@@ -18,5 +20,6 @@ public record CurrentUserResponse(
         String mail,
         String numTel,
         UserRole role,
-        Long entrepriseId
+        Long entrepriseId,
+        String entrepriseNom
 ) {}

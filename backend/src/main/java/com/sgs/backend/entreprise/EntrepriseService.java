@@ -4,6 +4,8 @@ import com.sgs.backend.adresse.Adresse;
 import com.sgs.backend.common.ResourceNotFoundException;
 import com.sgs.backend.entreprise.dto.EntrepriseRequestDTO;
 import com.sgs.backend.entreprise.dto.EntrepriseResponseDTO;
+import com.sgs.backend.entreprise.dto.EntrepriseUpdateDTO;
+import com.sgs.backend.utilisateur.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,7 @@ import java.util.List;
 public class EntrepriseService {
 
     private final EntrepriseRepository entrepriseRepository;
+    private final UtilisateurRepository utilisateurRepository;
 
     public List<EntrepriseResponseDTO> findAll() {
         return entrepriseRepository.findAll()
@@ -35,9 +38,17 @@ public class EntrepriseService {
         return toResponseDTO(entrepriseRepository.save(entreprise));
     }
 
-    public EntrepriseResponseDTO update(Long id, EntrepriseRequestDTO dto) {
+    /**
+     * Mise à jour des coordonnées (SANS le nom : identifiant de
+     * cloisonnement RG-10, non modifiable depuis l'API d'édition).
+     */
+    public EntrepriseResponseDTO update(Long id, EntrepriseUpdateDTO dto) {
         Entreprise entreprise = getOrThrow(id);
-        applyDto(entreprise, dto);
+        entreprise.setAdresse(new Adresse(
+                dto.adresse1(), dto.adresse2(), dto.ville(), dto.codePostal(), dto.pays()
+        ));
+        entreprise.setMail(dto.mail());
+        entreprise.setNumTel(dto.numTel());
         return toResponseDTO(entrepriseRepository.save(entreprise));
     }
 
@@ -71,7 +82,8 @@ public class EntrepriseService {
                 adresse != null ? adresse.getCodePostal() : null,
                 adresse != null ? adresse.getPays() : null,
                 entreprise.getMail(),
-                entreprise.getNumTel()
+                entreprise.getNumTel(),
+                utilisateurRepository.countByEntrepriseId(entreprise.getId())
         );
     }
 }

@@ -9,6 +9,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.math.BigDecimal;
 
 @Data
@@ -34,7 +37,12 @@ public class Article extends AbstractEntity {
     @Column(name = "prixunitairettc", nullable = false)
     private BigDecimal prixUnitaireTtc;
 
-    @Column(name = "photo")
+    // Stockée en base sous forme de data URL (base64) : la colonne doit
+    // être TEXT, pas varchar(255). LONGVARCHAR force Hibernate à créer
+    // une colonne TEXT/character large sur une base neuve ; pour une base
+    // existante, DataInitializer élargit la colonne au démarrage.
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "photo", columnDefinition = "text")
     private String photo;
 
     @ManyToOne
