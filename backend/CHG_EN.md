@@ -504,6 +504,12 @@ GET /api/stock/etat (observe discrepancy)
 - **Server port**: `8081`.
 - **Interactive documentation**: Swagger UI at `/swagger-ui.html`, OpenAPI
   schemas at `/api-docs` and `/v3/api-docs` (public access).
+- **Authentication errors**: any anonymous request, or one with a
+  missing/expired/invalid token, hitting a protected endpoint now returns
+  **401** with the standard JSON body (`RestAuthenticationEntryPoint`)
+  instead of a raw 403. Frontend convention: **401** → try
+  `POST /api/auth/refresh` once, then redirect to login on failure;
+  **403** → insufficient role, no need to re-login.
 - **Business errors**: 404 for missing or out-of-company resources, 400 for
   violated business rules (invalid status, insufficient stock…), 403 for
   actions reserved to a higher role.

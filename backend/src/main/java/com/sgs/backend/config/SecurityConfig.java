@@ -41,8 +41,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    // 401 = pas connecté (RestAuthenticationEntryPoint) ; 403 = rôle
+    // insuffisant (@PreAuthorize + GlobalExceptionHandler). La distinction
+    // guide le frontend : 401 → tenter un refresh puis re-login ; 403 →
+    // ne pas re-login, l'utilisateur est déjà identifié.
+
     private final JwtAuthFilter jwtAuthFilter;
     private final LoginRateLimitFilter loginRateLimitFilter;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
 
     /**
      * AuthenticationManager est requis par Spring Security pour
@@ -121,6 +127,12 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+
+            // Requête anonyme ou token invalide sur un endpoint protégé → 401
+            // JSON (format ApiError), au lieu du 403 brut de Spring. Côté
+            // frontend : 401 = tenter un refresh puis re-login ; 403 = rôle,
+            // ne pas re-login.
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(restAuthenticationEntryPoint))
 
             // Ajouter notre filtre JWT AVANT le filtre standard Spring Security
             // Cela permet d'authentifier les requêtes avec notre token

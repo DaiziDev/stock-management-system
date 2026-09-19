@@ -509,6 +509,12 @@ GET /api/stock/etat (constat d'écart)
 - **Erreurs métier** : 404 pour les ressources inexistantes ou hors entreprise,
   400 pour les règles métier violées (statut invalide, stock insuffisant…),
   403 pour les actions réservées à un rôle supérieur.
+- **Erreurs d'authentification** : toute requête anonyme ou à token
+  absent/expiré/invalide sur un endpoint protégé renvoie **401** avec le corps
+  JSON standard (`RestAuthenticationEntryPoint`), et non plus un 403 brut.
+  Convention frontend : **401** → tenter un `POST /api/auth/refresh` une fois
+  puis rediriger vers le login si échec ; **403** → rôle insuffisant, inutile
+  de re-login.
 
 ---
 
