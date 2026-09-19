@@ -50,7 +50,7 @@ Trois rôles existent (énumération `UserRole`) :
 
 | Rôle | Description | Accès dans l'implémentation actuelle |
 |---|---|---|
-| **ADMIN** | Accès total : gère les entreprises, les comptes utilisateurs, les paramètres | Création de comptes (`/register`), gestion des utilisateurs de son entreprise, CRUD entreprises |
+| **ADMIN** | Gère SON entreprise : comptes utilisateurs et paramètres, à l'intérieur de son tenant uniquement | Création de comptes (`/register`), gestion des utilisateurs de son entreprise, modification de son entreprise (`/entreprises/me`) |
 | **GESTIONNAIRE** | Gère les commandes, fournisseurs, stock et rapports | Accès métier (articles, commandes, stock, ventes…) |
 | **VENDEUR** | Vente au comptoir + consultation articles/clients | Accès métier (ventes, consultation) |
 
@@ -93,14 +93,31 @@ Trois rôles existent (énumération `UserRole`) :
 
 | Endpoint | Méthode | Accès | Description |
 |---|---|---|---|
-| `/api/auth/login` | POST | Public | Vérifie login + mot de passe, retourne un JWT + les infos utilisateur |
-| `/api/auth/register` | POST | ADMIN | Crée un compte utilisateur dans une entreprise (mot de passe hashé) |
+| `/api/auth/login` | POST | Public | Vérifie login + mot de passe, retourne un access token + un refresh token + les infos utilisateur |
+| `/api/auth/refresh` | POST | Public | Échange un refresh token valide contre un NOUVEAU couple access/refresh (rotation) — sans redonner ses identifiants |
+| `/api/auth/register` | POST | ADMIN | Crée un compte utilisateur dans l'entreprise de l'appelant (mot de passe hashé). L'entrepriseId n'existe plus dans la requête : le tenant est forcé à celui de l'admin connecté — un admin ne peut pas créer de compte dans une autre entreprise |
 | `/api/auth/me` | GET | Authentifié | Retourne le profil de l'utilisateur connecté (déduit du token) |
 
-### 3.3 Contenu du JWT
+### 3.3 Contenu des tokens JWT
 
-Le token contient : le **login**, le **rôle** et l'**identifiant d'entreprise**
-de l'utilisateur — ce qui permet le filtrage multi-tenant à chaque requête.
+Deux tokens sont émis à chaque connexion (et à chaque refresh — **rotation** :
+le couple précédent est remplacé) :
+
+| Token | Durée | Contenu | Usage |
+|---|---|---|---|
+| **Access token** | 15 min (défaut) | login, rôle, entrepriseId | Envoyé dans `Authorization: Bearer` à chaque requête |
+| **Refresh token** | 7 jours (défaut) | login seul + claim `typ=refresh` | Présenté à `POST /api/auth/refresh` pour obtenir un nouveau couple |
+
+Règles de sécurité :
+- Le refresh token ne porte **ni rôle ni entrepriseId** : ces données sont
+  relues en base à chaque refresh — un rôle modifié prend effet au prochain
+  refresh.
+- Un refresh token présenté comme access token est **refusé** par
+  `JwtAuthFilter` (sinon sa validité de 7 j en ferait une super-token).
+- Le compte est **relu en base** à chaque refresh : un compte désactivé ou
+  supprimé ne peut plus se rafraîchir, même avec un refresh token encore
+  valable.
+- Durées réglables : `JWT_EXPIRATION_MS` / `JWT_REFRESH_EXPIRATION_MS`.
 
 ### 3.4 Compte de bootstrap (amorçage)
 
@@ -136,16 +153,24 @@ store partagé (Redis…) en cas de déploiement multi-instances. Réglage :
 
 ### 4.1 Gestion des entreprises
 
-| Endpoint | Description |
-|---|---|
-| `GET /api/entreprises` | Lister les entreprises |
-| `GET /api/entreprises/{id}` | Détail d'une entreprise |
-| `POST /api/entreprises` | Créer une entreprise |
-| `PUT /api/entreprises/{id}` | Modifier une entreprise |
-| `DELETE /api/entreprises/{id}` | Supprimer une entreprise |
+| Endpoint | Accès | Description |
+|---|---|---|
+| `POST /api/entreprises/register` | **Public** | Enregistrement SaaS : crée l'entreprise ET son compte ADMIN en une requête (nom, email, téléphone requis + bloc admin : nom, prénom, email=login, mot de passe ≥ 8). 409 si nom ou email déjà pris |
+| `GET /api/entreprises/me` | Authentifié | Détail de MON entreprise (déduite du token) |
+| `PUT /api/entreprises/me` | ADMIN | Modifier mon entreprise (email + téléphone requis) |
+| `DELETE /api/entreprises/me` | ADMIN | Auto-destruction : supprime mon entreprise ET ses comptes. 409 si des données métier (articles, clients…) sont encore rattachées — purge métier à faire d'abord |
+
+> **Fin des endpoints d'énumération** : les anciens `GET /api/entreprises`
+> (liste globale) et `GET/PUT/DELETE /{id}` (id arbitraire) ont été supprimés.
+> Même un ADMIN ne peut ni lister ni manipuler le tenant d'un autre : l'id
+> visé est toujours celui du token, jamais un paramètre du client.
 
 Une entreprise possède : un **nom unique**, une **adresse** (rue, ville, code
-postal, pays), un **email** et un **numéro de téléphone**.
+postal, pays), un **email** et un **numéro de téléphone** (tous deux requis).
+
+**Onboarding typique** : enregistrement public → l'admin créé se connecte avec
+son email → il crée ses GESTIONNAIRE/VENDEUR via `/api/auth/register` → chaque
+utilisateur (admin compris) ne voit que les données de son entreprise.
 
 ---
 
@@ -467,6 +492,7 @@ GET /api/stock/etat (constat d'écart)
   tables sont créées/mises à jour automatiquement au démarrage.
 - **Configuration** : `application.yaml` avec variables d'environnement
   (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `JWT_EXPIRATION_MS`,
+  `JWT_REFRESH_EXPIRATION_MS`,
   `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `ADMIN_ROLE`, `CORS_ALLOWED_ORIGINS`,
   `MAIL_USERNAME`, `MAIL_PASSWORD`…). Modèle : `.env.example`.
   Les secrets **`JWT_SECRET`, `DB_PASSWORD` et `ADMIN_PASSWORD` sont requis**

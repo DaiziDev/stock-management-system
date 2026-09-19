@@ -4,9 +4,9 @@ import com.sgs.backend.common.ResourceNotFoundException;
 import com.sgs.backend.config.dto.CurrentUserResponse;
 import com.sgs.backend.config.dto.LoginRequest;
 import com.sgs.backend.config.dto.LoginResponse;
+import com.sgs.backend.config.dto.RefreshRequest;
 import com.sgs.backend.config.dto.RegisterRequest;
 import com.sgs.backend.entreprise.Entreprise;
-import com.sgs.backend.entreprise.EntrepriseRepository;
 import com.sgs.backend.utilisateur.Utilisateur;
 import com.sgs.backend.utilisateur.UtilisateurService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,16 +32,19 @@ import org.springframework.web.bind.annotation.*;
 /**
  * AuthController — endpoints d'authentification.
  *
- * Ce controller est le SEUL endpoint public (hors Swagger).
+ * Ce controller contient les SEULS endpoints publics (hors Swagger) :
+ * /login et /refresh.
  * Tous les autres endpoints de l'API nécessitent un JWT valide.
  *
  * Flow de connexion :
  *   1. Frontend envoie POST /api/auth/login { login, motDePasse }
  *   2. Spring Security vérifie le mot de passe via AuthenticationManager
- *   3. Si OK → on génère un JWT avec email, rôle, entrepriseId
- *   4. On retourne le token + les infos utilisateur
- *   5. Frontend stocke le token dans localStorage
+ *   3. Si OK → on génère un JWT (15 min) + un refresh token (7 j)
+ *   4. On retourne les deux tokens + les infos utilisateur
+ *   5. Frontend stocke les deux tokens dans localStorage
  *   6. À chaque requête future → header Authorization: Bearer <token>
+ *   7. Access token expiré → POST /api/auth/refresh { refreshToken }
+ *      → nouveau couple access/refresh, sans redonner ses identifiants
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -51,7 +56,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UtilisateurService utilisateurService;
     private final UserDetailsService userDetailsService;
-    private final EntrepriseRepository entrepriseRepository;
+    private final CurrentUserService currentUserService;
 
     /**
      * POST /api/auth/login
@@ -92,14 +97,89 @@ public class AuthController {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         Utilisateur utilisateur = utilisateurService.findByLogin(userDetails.getUsername());
 
-        // Générer le JWT avec les infos nécessaires
+        // Construire la réponse (tokens + infos utilisateur) — helper partagé
+        // avec /refresh pour garantir la même forme de réponse aux deux flows.
+        return ResponseEntity.ok(buildAuthResponse(utilisateur));
+    }
+
+    /**
+     * POST /api/auth/refresh
+     *
+     * Échange un refresh token valide contre un NOUVEAU couple
+     * access/refresh (rotation) — sans redonner ses identifiants.
+     *
+     * Vérifications :
+     * 1. Signature + expiration du refresh token (validateRefreshToken)
+     * 2. Type "refresh" (isRefreshToken, redondant avec #1 mais explicite)
+     * 3. L'utilisateur existe TOUJOURS et son compte est TOUJOURS actif :
+     *    relu en base à chaque refresh — un compte désactivé ou supprimé
+     *    ne peut plus se rafraîchir, même avec un refresh token encore
+     *    valable (le token ne porte pas l'état du compte).
+     *
+     * Sécurité :
+     * - Endpoint PUBLIC mais le rate limiting login ne s'y applique pas :
+     *   un refresh token est une preuve d'authentification en soi (volé, il
+     *   vaut un compte jusqu'à expiration — d'où la rotation à chaque usage
+     *   et la relecture du compte en base).
+     * - Rotation systématique : l'ancien refresh token reste signé/valable
+     *   jusqu'à expiration (stateless, pas de révocation unitaire) ; la
+     *   rotation limite la fenêtre d'abus en rendant chaque token à usage
+     *   unique en pratique.
+     */
+    @PostMapping("/refresh")
+    @Operation(
+            summary = "🔄 Rafraîchir le token",
+            description = "Échange un refresh token valide contre un nouveau couple " +
+                    "access/refresh. Le compte est relu en base : un compte désactivé " +
+                    "ne peut plus se rafraîchir.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "✅ Nouveau couple de tokens retourné"),
+                    @ApiResponse(responseCode = "401", description = "❌ Refresh token invalide, expiré ou compte désactivé")
+            }
+    )
+    public ResponseEntity<LoginResponse> refresh(
+            @Parameter(description = "Refresh token reçu au login/refresh précédent", required = true)
+            @Valid @RequestBody RefreshRequest request
+    ) {
+        String refreshToken = request.refreshToken();
+
+        // 1-2. Signature, expiration et type du refresh token
+        if (!jwtUtil.validateRefreshToken(refreshToken) || !jwtUtil.isRefreshToken(refreshToken)) {
+            throw new BadCredentialsException("Refresh token invalide ou expiré");
+        }
+
+        // 3. Le compte doit toujours exister ET être actif (relu en base).
+        //    Utilisateur supprimé depuis l'émission du refresh token → 401
+        //    (pas un 404 : pour le client, c'est un problème d'authentification,
+        //    la ressource n'est pas "ailleurs" — cohérent avec le contrat
+        //    d'erreur du login).
+        String login = jwtUtil.extractEmail(refreshToken);
+        Utilisateur utilisateur;
+        try {
+            utilisateur = utilisateurService.findByLogin(login);
+        } catch (ResourceNotFoundException e) {
+            throw new BadCredentialsException("Refresh token invalide ou expiré");
+        }
+        if (!utilisateur.isActif()) {
+            throw new DisabledException("Compte désactivé");
+        }
+
+        // Rotation : nouveau couple access + refresh (les deux changent).
+        return ResponseEntity.ok(buildAuthResponse(utilisateur));
+    }
+
+    /**
+     * Génère le couple access/refresh + les infos utilisateur — le même
+     * payload pour login et refresh (rotation).
+     */
+    private LoginResponse buildAuthResponse(Utilisateur utilisateur) {
         String token = jwtUtil.generateToken(
                 utilisateur.getLogin(),
                 utilisateur.getRole().name(),
                 utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getId() : null
         );
+        String refreshToken = jwtUtil.generateRefreshToken(utilisateur.getLogin());
 
-        // Construire la réponse (token + infos utilisateur)
         LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
                 utilisateur.getId(),
                 utilisateur.getNom(),
@@ -109,7 +189,7 @@ public class AuthController {
                 utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getId() : null
         );
 
-        return ResponseEntity.ok(new LoginResponse(token, userInfo));
+        return new LoginResponse(token, refreshToken, userInfo);
     }
 
     /**
@@ -138,11 +218,15 @@ public class AuthController {
         // il s'exécute AVANT d'entrer dans la méthode, donc avant toute
         // lecture en base — un non-admin n'atteint jamais ce code.
 
-        // Vérifier que l'entreprise existe
-        Entreprise entreprise = entrepriseRepository.findById(request.entrepriseId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Entreprise introuvable avec id=" + request.entrepriseId()
-                ));
+        // ⚠️ Multi-tenant : le tenant n'est PAS lu dans la requête (le champ
+        // entrepriseId a été retiré du RegisterRequest). Il est forcé à
+        // l'entreprise de l'APPELANT — un admin ne crée des comptes que pour
+        // SON entreprise. Sans cette garde, un admin pourrait inscrire qui il
+        // veut dans un tenant voisin, brisant l'isolation multi-tenant.
+        Entreprise entreprise = currentUserService.getEntrepriseCourante();
+        if (entreprise == null) {
+            throw new ResourceNotFoundException("Aucune entreprise rattachée au compte appelant");
+        }
 
         // Créer l'utilisateur (le mot de passe sera hashé dans UtilisateurService.create)
         Utilisateur newUser = new Utilisateur();
@@ -157,24 +241,8 @@ public class AuthController {
 
         Utilisateur saved = utilisateurService.create(newUser);
 
-        // Générer un token pour le nouvel utilisateur
-        String token = jwtUtil.generateToken(
-                saved.getLogin(),
-                saved.getRole().name(),
-                saved.getEntreprise() != null ? saved.getEntreprise().getId() : null
-        );
-
-        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
-                saved.getId(),
-                saved.getNom(),
-                saved.getPrenom(),
-                saved.getLogin(),
-                saved.getRole(),
-                saved.getEntreprise() != null ? saved.getEntreprise().getId() : null
-        );
-
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new LoginResponse(token, userInfo));
+                .body(buildAuthResponse(saved));
     }
 
     /**

@@ -18,8 +18,10 @@ public record EntrepriseRequestDTO(
         String codePostal,
         String pays,
 
+        @NotBlank(message = "l'email de l'entreprise est obligatoire")
         @Email(message = "l'adresse mail doit être valide")
         String mail,
 
+        @NotBlank(message = "le téléphone de l'entreprise est obligatoire")
         String numTel
 ) {}

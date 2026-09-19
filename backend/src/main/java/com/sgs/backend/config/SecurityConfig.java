@@ -96,12 +96,17 @@ public class SecurityConfig {
             // Configurer les règles d'accès aux endpoints
             .authorizeHttpRequests(auth -> auth
                 // ── Endpoints PUBLICS (pas besoin d'être connecté) ──
-                // Seul /login est public : /register et /me lisent
+                // /login, /refresh et /entreprises/register sont publics :
+                // /register et /me des UTILISATEURS lisent
                 // @AuthenticationPrincipal et plantent (NPE -> 500) si appelés
                 // sans JWT -- ils doivent passer par la règle "authenticated"
                 // ci-dessous pour recevoir un 401/403 propre à la place.
                 .requestMatchers(
                         "/api/auth/login",
+                        "/api/auth/refresh",       // échange refresh token <-> nouveau couple (pas de
+                                                   // rate limit dédié : le token EST la preuve d'auth)
+                        "/api/entreprises/register", // onboarding public : crée l'entreprise + son admin
+                                                     // (rate limité par LoginRateLimitFilter, cf. plus bas)
                         "/swagger-ui.html",       // Swagger UI
                         "/swagger-ui/**",         // Swagger UI ressources
                         "/api-docs/**",           // OpenAPI docs

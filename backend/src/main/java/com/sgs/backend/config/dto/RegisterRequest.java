@@ -5,9 +5,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * DTO de requête pour l'inscription d'un nouvel utilisateur.
+ * DTO de requête pour la création d'un utilisateur par un ADMIN.
  *
- * Réservé aux ADMIN uniquement (contrôle côté controller).
+ * ⚠️ PAS de champ entrepriseId : le tenant est FORCÉ à l'entreprise de
+ * l'appelant (CurrentUserService) dans AuthController. Un champ venu du
+ * client permettrait à un ADMIN de créer des comptes dans une AUTRE
+ * entreprise — brisant l'isolation multi-tenant. Chaque admin ne crée
+ * des utilisateurs que pour SON entreprise, sans exception.
+ *
+ * Réservé aux ADMIN (contrôle @PreAuthorize côté controller).
  * Le mot de passe sera hashé côté backend avant sauvegarde.
  */
 public record RegisterRequest(
@@ -28,8 +34,5 @@ public record RegisterRequest(
         String numTel,
 
         @NotNull(message = "Le rôle est obligatoire")
-        UserRole role,
-
-        @NotNull(message = "L'entreprise est obligatoire")
-        Long entrepriseId
+        UserRole role
 ) {}

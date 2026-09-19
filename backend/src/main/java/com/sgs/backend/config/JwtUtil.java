@@ -36,8 +36,17 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long jwtExpiration; // en millisecondes
 
+    @Value("${jwt.refresh-expiration:604800000}")
+    private long refreshExpiration; // en millisecondes (défaut : 7 jours)
+
     /** HMAC-SHA256 : taille minimale du secret après décodage Base64 (256 bits). */
     private static final int MIN_SECRET_BYTES = 32;
+
+    // Distinction access / refresh : le refresh token porte un claim "typ"
+    // dédié ; l'access token, lui, n'a PAS de claim typ — l'absence est ce
+    // qui l'identifie (compatibilité avec les tokens émis avant ce mécanisme).
+    private static final String CLAIM_TYPE = "typ";
+    private static final String TYPE_REFRESH = "refresh";
 
     // ───────────── Extraction ─────────────
 
@@ -90,6 +99,61 @@ public class JwtUtil {
             return email.equals(userDetails.getUsername()) && !isTokenExpired(token);
         } catch (JwtException | IllegalArgumentException e) {
             // Token invalide (mauvaise signature, expiré, malformé…)
+            return false;
+        }
+    }
+
+    // ───────────── Refresh ─────────────
+
+    /**
+     * Génère le refresh token : SEULEMENT le login (subject) + le claim
+     * typ=refresh. Volontairement sans rôle ni entrepriseId — ces données
+     * sont relues en base à chaque refresh (même principe que JwtAuthFilter :
+     * un rôle modifié pendant la session prend effet au prochain refresh).
+     */
+    public String generateRefreshToken(String email) {
+        return Jwts.builder()
+                .claim(CLAIM_TYPE, TYPE_REFRESH)
+                .subject(email)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + refreshExpiration))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    /**
+     * Vrai si le token porte le claim typ=refresh.
+     *
+     * Utilisé par JwtAuthFilter pour REFUSER un refresh token présenté comme
+     * access token (sinon sa validité de 7 jours en ferait une super-token),
+     * et par AuthController pour vérifier le type avant tout traitement.
+     * Un token illisible/invalide renvoie false — il sera de toute façon
+     * rejeté par la validation en aval.
+     */
+    public boolean isRefreshToken(String token) {
+        try {
+            String typ = extractClaim(token, claims -> claims.get(CLAIM_TYPE, String.class));
+            return TYPE_REFRESH.equals(typ);
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Valide un refresh token : signature correcte, non expiré, type
+     * "refresh". Ne vérifie PAS l'existence ni l'état du compte — c'est le
+     * rôle d'AuthController de recharger l'utilisateur en base après coup.
+     */
+    public boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return TYPE_REFRESH.equals(claims.get(CLAIM_TYPE, String.class))
+                    && claims.getExpiration().after(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }

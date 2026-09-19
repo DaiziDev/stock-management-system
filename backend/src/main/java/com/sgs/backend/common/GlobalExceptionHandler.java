@@ -117,6 +117,40 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    // Violation d'intégrité en base (FK, unique…) non anticipée par le service -> 409.
+    // Cas typique : DELETE d'une entreprise qui a encore des articles/utilisateurs
+    // rattachés — la contrainte FK refuse la suppression. 409 (Conflict) : la
+    // requête est valide, c'est l'ÉTAT des données qui s'y oppose. Sans ce
+    // handler, l'exception remontait jusqu'au dispatch d'erreur /error, lui-même
+    // bloqué par la chaîne de sécurité → 403 vide, inexplicable côté client.
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrity(org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest req) {
+        ApiError error = new ApiError(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                "Suppression impossible : des données sont encore rattachées à cette ressource",
+                req.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // Doublon métier détecté AVANT écriture (nom d'entreprise existant, login
+    // déjà pris lors de l'enregistrement public d'une entreprise...) -> 409.
+    // 409 et non 400 : la requête est valide, c'est l'état des données qui
+    // s'oppose — le client choisit un autre nom/login et renvoie telle quelle.
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiError> handleDuplicateResource(DuplicateResourceException ex, HttpServletRequest req) {
+        ApiError error = new ApiError(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                req.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     // Erreurs de validation (@NotNull, @NotBlank... sur un DTO annoté @Valid) -> 400
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {

@@ -40,7 +40,8 @@ spring:
 # Générer une clé :  openssl rand -base64 48
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION_MS:86400000}  # 24 heures en millisecondes
+  expiration: ${JWT_EXPIRATION_MS:900000}  # access token : 15 minutes
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # refresh token : 7 jours
 
 # Compte administrateur de bootstrap (créé au premier démarrage si absent).
 # ADMIN_PASSWORD n'a PAS de valeur par défaut : requis via l'environnement,

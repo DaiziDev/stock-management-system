@@ -2,6 +2,7 @@ package com.sgs.backend.utilisateur;
 
 import com.sgs.backend.config.JwtAuthFilter;
 import com.sgs.backend.config.JwtUtil;
+import com.sgs.backend.entreprise.Entreprise;
 import com.sgs.backend.roles.UserRole;
 import com.sgs.backend.utilisateur.dto.UtilisateurUpdateDTO;
 import jakarta.servlet.FilterChain;
@@ -76,8 +77,17 @@ class UtilisateurServiceActifTest {
         Utilisateur u = new Utilisateur();
         u.setId(id);
         u.setLogin(login);
+        // Obligatoire : new User(login, motDePasse, ...) de UserDetails refuse
+        // les valeurs null/vides (Cannot pass null or empty values).
+        u.setMotDePasse("hash-bcrypt");
         u.setRole(role);
         u.setActif(actif);
+        // Obligatoire : update() passe par findByIdAndEntreprise(id, entrepriseId)
+        // qui exige que l'utilisateur appartienne à l'entreprise 10 (celle des
+        // appels de test) — sans entreprise, tout est traité comme introuvable.
+        Entreprise entreprise = new Entreprise();
+        entreprise.setId(10L);
+        u.setEntreprise(entreprise);
         return u;
     }
 

@@ -1,7 +1,7 @@
 # Frontend Architecture — SGS Stock Management
 
 > Frontend architecture for the SGS backend (Spring Boot 3.4.1 REST API, JWT security, multi-tenant by `entrepriseId`).
-> Derived from a full backend analysis: 14 controllers, ~50 REST endpoints, 3 roles (ADMIN / GESTIONNAIRE / VENDEUR), no pagination today, single JWT (no refresh token).
+> Derived from a full backend analysis: 14 controllers, ~50 REST endpoints, 3 roles (ADMIN / GESTIONNAIRE / VENDEUR), no pagination today, access token (15 min) + refresh token (7 d) with rotation.
 > Companion documents: `CHG.md` / `CHG_EN.md` (functional requirements).
 >
 > **Adopted principles:** feature-first (each feature owns its api / hooks / schemas / stores / types / utils), locale-prefixed routes (`/fr`, `/en`) with role-grouped dashboard sections, **dark mode across the whole app**, **i18n across the whole app**, colocated `__tests__` folders.
@@ -16,8 +16,9 @@
 | Aspect | Observation | Frontend consequence |
 |---|---|---|
 | ~14 controllers under `/api/**` | auth, entreprises, utilisateurs, articles, categories, clients, fournisseurs, commandes-client, commandes-fournisseur, ventes, stock, mouvements-stock, notifications, dashboard | **One feature module per domain** (see §3) |
-| **JWT stateless auth** | `Authorization: Bearer <token>` on everything except `/api/auth/login` + Swagger | Axios interceptor attaches token; 401 → logout to `/login` |
-| **Single token, 24 h expiry, no refresh endpoint** | JWT holds `login`, `role`, `entrepriseId` | Decode JWT client-side for role/entreprise display; plan a refresh endpoint on the backend |
+| **JWT stateless auth** | `Authorization: Bearer <token>` on everything except `/api/auth/login`, `/api/auth/refresh`, `/api/entreprises/register` (public SaaS onboarding) + Swagger | Axios interceptor attaches token; 401 → try refresh once → logout to `/login` |
+| **SaaS self-onboarding** | `POST /api/entreprises/register` (public) creates the company + its ADMIN in one request; all company endpoints are self-service (`/entreprises/me`) — no enumeration of other tenants, even for admins | Public registration page + "Mon entreprise" settings page; nothing else needed |
+| **Access token (15 min) + refresh token (7 d), rotation on refresh** | Access JWT holds `login`, `role`, `entrepriseId`; refresh holds login only (`typ=refresh`) | Decode access JWT client-side for role/entreprise display; on 401, try `POST /api/auth/refresh` once, then logout if it fails |
 | **CORS locked to `http://localhost:4200` with `allowCredentials(true)`** | `CorsConfig.java` | Update backend allow-list to the React dev origin (e.g. `http://localhost:5173`) |
 | **Multi-tenant filtering is server-side** | Every list is pre-filtered by the user's `entrepriseId` | No client-side tenant logic needed; render what the API returns |
 | **Role authorization is NOT enforced per endpoint** | Only account management is ADMIN-gated | Frontend hides per role (§7), **backend must add real enforcement** |
@@ -28,7 +29,8 @@
 
 ### 1.2 Key payloads the frontend will consume
 
-- `POST /api/auth/login` → `{ token, user: { id, nom, prenom, login, role, entrepriseId } }`
+- `POST /api/auth/login` → `{ token, refreshToken, user: { id, nom, prenom, login, role, entrepriseId } }`
+- `POST /api/auth/refresh` → same shape (new access + new refresh token)
 - `GET /api/auth/me` → profile (rehydrates the session on page refresh)
 - `GET /api/dashboard/kpis` → 6 numbers for the home page
 - `GET /api/stock/alertes` + `GET /api/notifications` → low-stock badge in the navbar
@@ -472,7 +474,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 - **`queryClient.clear()` on logout is mandatory** — TanStack Query caches per-key; without it, the next user on a shared machine could see the previous tenant's cached lists.
 - **Session rehydration**: on app boot, if a token exists → `GET /api/auth/me`; 200 → restore user; 401 → clear and redirect. `isAuthenticated` must mean "a **valid** token exists", not just "a token string exists".
-- **No refresh token exists** — until the backend adds `POST /api/auth/refresh`, a 401 means re-login. Avoid auto-retry loops.
+- **Refresh flow**: on a 401 (not from `/api/auth/refresh` itself), call `POST /api/auth/refresh` with the stored refresh token **once** (queue concurrent requests), retry the original call with the new access token; if the refresh fails → `clearSession()` + login. The refresh response carries a **new** refresh token (rotation) — always overwrite both stored tokens.
 - Token storage goes through `core/services/tokenStorage` (thin localStorage wrapper) so the storage decision is swappable in one file (memory/sessionStorage upgrade path).
 
 ### 7.2 Client-side authorization

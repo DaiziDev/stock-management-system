@@ -51,7 +51,7 @@ Three roles exist (the `UserRole` enum):
 
 | Role | Description | Access in the current implementation |
 |---|---|---|
-| **ADMIN** | Full access: manages companies, user accounts, settings | Account creation (`/register`), user management within their company, company CRUD |
+| **ADMIN** | Manages HIS OWN company: user accounts and settings, within his tenant only | Account creation (`/register`), user management within their company, editing their own company (`/entreprises/me`) |
 | **GESTIONNAIRE** (Manager) | Manages orders, suppliers, stock and reports | Business access (articles, orders, stock, sales…) |
 | **VENDEUR** (Salesperson) | Counter sales + viewing articles/customers | Business access (sales, consultations) |
 
@@ -94,14 +94,30 @@ Three roles exist (the `UserRole` enum):
 
 | Endpoint | Method | Access | Description |
 |---|---|---|---|
-| `/api/auth/login` | POST | Public | Verifies login + password, returns a JWT + user info |
-| `/api/auth/register` | POST | ADMIN | Creates a user account in a company (hashed password) |
+| `/api/auth/login` | POST | Public | Verifies login + password, returns an access token + a refresh token + user info |
+| `/api/auth/refresh` | POST | Public | Exchanges a valid refresh token for a NEW access/refresh pair (rotation) — no credentials needed |
+| `/api/auth/register` | POST | ADMIN | Creates a user account in the CALLER's company (hashed password). No entrepriseId in the request: the tenant is forced to the connected admin's own — an admin cannot create accounts in another company |
 | `/api/auth/me` | GET | Authenticated | Returns the connected user's profile (derived from the token) |
 
 ### 3.3 JWT contents
 
-The token contains: the **login**, the **role** and the **company ID** — which
-enables multi-tenant filtering on every request.
+Two tokens are issued at every login (and at every refresh — **rotation**:
+the previous pair is replaced):
+
+| Token | Lifetime | Contents | Usage |
+|---|---|---|---|
+| **Access token** | 15 min (default) | login, role, company ID | Sent in `Authorization: Bearer` on every request |
+| **Refresh token** | 7 days (default) | login only + `typ=refresh` claim | Presented to `POST /api/auth/refresh` to get a new pair |
+
+Security rules:
+- The refresh token carries **neither role nor company ID**: this data is
+  re-read from the database at every refresh — a role change takes effect on
+  the next refresh.
+- A refresh token presented as an access token is **rejected** by
+  `JwtAuthFilter` (otherwise its 7-day validity would make it a super-token).
+- The account is **re-read from the database** at every refresh: a disabled
+  or deleted account can no longer refresh, even with a still-valid token.
+- Lifetimes configurable via `JWT_EXPIRATION_MS` / `JWT_REFRESH_EXPIRATION_MS`.
 
 ### 3.4 Bootstrap account (bootstrapping)
 
@@ -137,16 +153,24 @@ multi-instance deployment. Tuning:
 
 ### 4.1 Company management
 
-| Endpoint | Description |
-|---|---|
-| `GET /api/entreprises` | List companies |
-| `GET /api/entreprises/{id}` | Company details |
-| `POST /api/entreprises` | Create a company |
-| `PUT /api/entreprises/{id}` | Update a company |
-| `DELETE /api/entreprises/{id}` | Delete a company |
+| Endpoint | Access | Description |
+|---|---|---|
+| `POST /api/entreprises/register` | **Public** | SaaS onboarding: creates the company AND its ADMIN account in one request (name, email, phone required + admin block: nom, prenom, email=login, password ≥ 8). 409 if name or email already taken |
+| `GET /api/entreprises/me` | Authenticated | Details of MY company (derived from the token) |
+| `PUT /api/entreprises/me` | ADMIN | Update my company (email + phone required) |
+| `DELETE /api/entreprises/me` | ADMIN | Self-destruct: deletes my company AND its user accounts. 409 if business data (articles, clients…) is still attached — purge business data first |
+
+> **Enumeration endpoints are gone**: the former `GET /api/entreprises`
+> (global list) and `GET/PUT/DELETE /{id}` (arbitrary id) have been removed.
+> Even an ADMIN can neither list nor touch another tenant: the targeted id is
+> always the token's own, never a client-supplied parameter.
 
 A company has: a **unique name**, an **address** (street, city, postal code,
-country), an **email** and a **phone number**.
+country), an **email** and a **phone number** (both required).
+
+**Typical onboarding**: public registration → the created admin logs in with
+his email → creates his GESTIONNAIRE/VENDEUR users via `/api/auth/register` →
+every user (admin included) only ever sees their own company's data.
 
 ---
 
@@ -164,7 +188,7 @@ Restricted to the **ADMIN** role, limited to users of **their own company**.
 Rules:
 - The **login is unique**; changing it is not supported (nor is the password,
   which belongs to dedicated future endpoints).
-- Creation goes exclusively through `POST /api/auth/register` (ADMIN only).
+- Creation goes exclusively through `POST /api/auth/register` (ADMIN only); the new account is always attached to the admin's own company.
 - A user cannot see or manage accounts of another company.
 
 ---
@@ -466,6 +490,7 @@ GET /api/stock/etat (observe discrepancy)
   created/updated automatically at startup.
 - **Configuration**: `application.yaml` with environment variables (`DB_URL`,
   `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `JWT_EXPIRATION_MS`,
+  `JWT_REFRESH_EXPIRATION_MS`,
   `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `ADMIN_ROLE`, `CORS_ALLOWED_ORIGINS`,
   `MAIL_USERNAME`, `MAIL_PASSWORD`…). Template: `.env.example`.
   The secrets **`JWT_SECRET`, `DB_PASSWORD` and `ADMIN_PASSWORD` are required**

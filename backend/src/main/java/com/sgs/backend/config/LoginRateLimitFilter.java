@@ -19,8 +19,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Rate limiting sur POST /api/auth/login — le seul endpoint public de l'API,
- * donc la seule porte d'attaque « offline » d'un brute force de mot de passe.
+ * Rate limiting des endpoints publics mutables de l'API :
+ *   - POST /api/auth/login             → anti brute force (comptage des échecs)
+ *   - POST /api/entreprises/register   → anti-spam d'onboarding (volume total)
  *
  * Algorithme : fenêtre glissante par IP.
  *   - Chaque IP a un compteur d'échecs + la date du début de sa fenêtre.
@@ -54,8 +55,19 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class LoginRateLimitFilter extends OncePerRequestFilter {
 
-    /** Chemin surveillé — seul endpoint public de l'API (cf. SecurityConfig). */
+    /** Chemins surveillés — les seuls endpoints publics mutables de l'API.
+     *
+     * LOGIN : anti brute force de mot de passe (comptage des échecs).
+     * REGISTER : anti-spam d'onboarding — endpoint public d'inscription
+     * d'entreprise, donc créateur de données. Ici on limite le VOLUME de
+     * requêtes (pas seulement les échecs) : chaque POST est compté, succès
+     * inclus, sinon un bot crée des milliers d'entreprises/admins à la suite.
+     * Seuil unique pour les deux gardes (config partagée) : suffisant, la
+     * fenêtre et le plafond sont déjà calibrés pour la même menace (abus
+     * venant d'une même IP).
+     */
     private static final String LOGIN_PATH = "/api/auth/login";
+    private static final String REGISTER_PATH = "/api/entreprises/register";
 
     private final int maxFailures;
     private final long windowSeconds;
@@ -80,16 +92,29 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         this.windowSeconds = windowSeconds;
     }
 
-    /** État d'une IP : échecs dans la fenêtre courante + début de fenêtre. */
+    /**
+     * État d'une IP : échecs de login dans la fenêtre courante + requêtes
+     * d'enregistrement (register) + début de fenêtre (epoch ms).
+     * ConcurrentHashMap suffit : une seule écriture atomique par clé, pas de
+     * structure imbriquée à verrouiller.
+     *
+     * Visibilité package-private : la classe est un détail d'implémentation,
+     * mais les tests unitaires (même package) simulent l'écoulement du temps
+     * en réécrivant windowStart — un mock d'horloge serait plus lourd que ça
+     * n'en vaut la peine ici.
+     */
     static final class Attempt {
         final AtomicInteger failures = new AtomicInteger();
+        final AtomicInteger requests = new AtomicInteger();
         final AtomicLong windowStart = new AtomicLong(System.currentTimeMillis());
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // Ne s'exécute QUE sur le login — aucune latence ajoutée ailleurs.
-        return !LOGIN_PATH.equals(request.getServletPath());
+        // Ne s'exécute QUE sur les endpoints publics mutables — aucune latence
+        // ajoutée ailleurs.
+        String path = request.getServletPath();
+        return !LOGIN_PATH.equals(path) && !REGISTER_PATH.equals(path);
     }
 
     @Override
@@ -112,11 +137,19 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         if (now - windowStart > windowSeconds * 1000L) {
             if (attempt.windowStart.compareAndSet(windowStart, now)) {
                 attempt.failures.set(0);
+                attempt.requests.set(0);
             }
+            // CAS COURANT en pratique : la fenêtre est expirée mais un autre
+            // thread vient de la réinitialiser (compareAndSet perdu) — le
+            // compteur est déjà à zéro, rien à faire de plus.
         }
 
-        // Blocage : la fenêtre est encore valide et le plafond d'échecs est atteint.
-        if (attempt.failures.get() >= maxFailures) {
+        boolean isRegister = REGISTER_PATH.equals(request.getServletPath());
+
+        // Blocage : selon l'endpoint surveillé, on borne soit les échecs
+        // consécutifs (login), soit le volume total de requêtes (register).
+        int requestCount = isRegister ? attempt.requests.get() : attempt.failures.get();
+        if (requestCount >= maxFailures) {
             long retryAfter = Math.max(1,
                     (attempt.windowStart.get() + windowSeconds * 1000L - now + 999) / 1000);
             response.setStatus(429);
@@ -126,8 +159,11 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
                     Instant.now(),
                     429,
                     "Too Many Requests",
-                    "Trop de tentatives de connexion échouées. Réessayez dans "
-                            + retryAfter + " seconde(s).",
+                    isRegister
+                            ? "Trop de créations d'entreprises depuis cette adresse. Réessayez dans "
+                                    + retryAfter + " seconde(s)."
+                            : "Trop de tentatives de connexion échouées. Réessayez dans "
+                                    + retryAfter + " seconde(s).",
                     request.getRequestURI()
             );
             // Écrit manuellement (pas de controller derrière ce refus — le filtre
@@ -136,24 +172,38 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
                     "{\"timestamp\":\"" + error.timestamp() + "\",\"status\":429,"
                             + "\"error\":\"Too Many Requests\",\"message\":\""
                             + error.message() + "\",\"path\":\"" + error.path() + "\"}");
-            return; // Requête stoppée ici : n'atteint jamais AuthenticationManager.
+            return; // Requête stoppée ici : n'atteint jamais le controller.
+        }
+
+        // Register : le POST est compté AVANT la chaîne (volume total, succès
+        // inclus). Un échec métier (409 doublon, 400 validation) consomme
+        // aussi une place : c'est un bot ou un spammeur qui le provoque.
+        if (isRegister) {
+            attempt.requests.incrementAndGet();
         }
 
         filterChain.doFilter(request, response);
 
         // Post-traitement : la réponse est disponible après la chaîne.
         int status = response.getStatus();
-        if (status == 200) {
-            // Succès → l'IP repart de zéro (suppression : l'entrée sera
+        if (status == 200 || status == 201) {
+            // Succès login → l'IP repart de zéro (suppression : l'entrée sera
             // recréée à la prochaine tentative, pas de compteur fantôme).
-            attempts.remove(ip);
+            // Register n'entre pas ici : déjà compté avant la chaîne.
+            if (!isRegister) {
+                attempts.remove(ip);
+            }
         } else if (status == 401 || status == 403) {
             // Échec d'authentification (401 = mauvais identifiants, 403 = compte
-            // désactivé...) → compteur d'échecs +1.
-            attempt.failures.incrementAndGet();
+            // désactivé...) → compteur d'échecs +1. Ne concerne que le login :
+            // register a déjà été compté avant la chaîne (volume total).
+            if (!isRegister) {
+                attempt.failures.incrementAndGet();
+            }
         }
-        // Les autres statuts (500, 400 de validation...) ne comptent pas :
-        // ils ne signalent pas une tentative de devine mot de passe.
+        // Les autres statuts (500, 400 de validation, 409 doublon...) ne comptent pas :
+        // ils ne signalent pas une tentative de devine mot de passe. Pour register,
+        // le volume a déjà été compté avant la chaîne.
     }
 
     /**

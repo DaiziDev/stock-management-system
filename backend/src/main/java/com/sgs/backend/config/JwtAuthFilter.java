@@ -56,6 +56,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         // 2. Extraire le token (enlever "Bearer " au début)
         final String jwt = authHeader.substring(7);
 
+        // 2bis. Un refresh token n'est JAMAIS valable comme access token :
+        // valable 7 jours contre 15 minutes, l'accepter ici en ferait une
+        // super-token. Un access token (sans claim typ) et un token invalide
+        // passent — le premier suit le flow normal, le second échouera à la
+        // validation à l'étape 6.
+        if (jwtUtil.isRefreshToken(jwt)) {
+            logger.warn("Refresh token présenté comme access token — refusé");
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             // 3. Extraire l'email du token
             final String email = jwtUtil.extractEmail(jwt);
