@@ -33,8 +33,8 @@
         <b class="mt-1 block font-display text-2xl font-[650] text-gold-600">{{ nbEnCours() }}</b>
       </div>
       <div class="carte p-4">
-        <span class="text-2xs font-semibold uppercase tracking-wider text-gray-400">Validées</span>
-        <b class="mt-1 block font-display text-2xl font-[650] text-success">{{ nbValidees() }}</b>
+        <span class="text-2xs font-semibold uppercase tracking-wider text-gray-400">En livraison</span>
+        <b class="mt-1 block font-display text-2xl font-[650] text-success">{{ nbEnLivraison() }}</b>
       </div>
       <div class="carte p-4">
         <span class="text-2xs font-semibold uppercase tracking-wider text-gray-400">Annulées</span>
@@ -103,6 +103,12 @@
                   @if (c.statut === 'EN_COURS') {
                     <button type="button" class="btn btn-primaire px-3 py-1.5 text-xs" [disabled]="actionEnCours() === c.id" (click)="valider(c)">Valider</button>
                   }
+                  @if (c.statut === 'VALIDEE') {
+                    <button type="button" class="btn btn-primaire px-3 py-1.5 text-xs" [disabled]="actionEnCours() === c.id" (click)="expedier(c)">Expédier</button>
+                  }
+                  @if (c.statut === 'EXPEDIEE') {
+                    <button type="button" class="btn btn-primaire px-3 py-1.5 text-xs" [disabled]="actionEnCours() === c.id" (click)="livrer(c)">Livrer</button>
+                  }
                 </div>
               </div>
             </li>
@@ -138,6 +144,12 @@
                       <button type="button" class="btn btn-secondaire px-3 py-1.5 text-xs" (click)="ouvrirDetail(c)">Détail</button>
                       @if (c.statut === 'EN_COURS') {
                         <button type="button" class="btn btn-primaire px-3 py-1.5 text-xs" [disabled]="actionEnCours() === c.id" (click)="valider(c)">Valider</button>
+                      }
+                      @if (c.statut === 'VALIDEE') {
+                        <button type="button" class="btn btn-primaire px-3 py-1.5 text-xs" [disabled]="actionEnCours() === c.id" (click)="expedier(c)">Expédier</button>
+                      }
+                      @if (c.statut === 'EXPEDIEE') {
+                        <button type="button" class="btn btn-primaire px-3 py-1.5 text-xs" [disabled]="actionEnCours() === c.id" (click)="livrer(c)">Livrer</button>
                       }
                     </div>
                   </td>
@@ -206,6 +218,20 @@
                 <div class="mb-4 rounded-sm border border-danger/30 bg-danger-bg px-3.5 py-2.5 text-sm text-danger">{{ erreurAction() }}</div>
               }
 
+              <!-- Progression logistique (le stock a bougé dès la validation) -->
+              @if (d.statut !== 'EN_COURS' && d.statut !== 'ANNULEE') {
+                <div class="mb-5 rounded-lg border border-line bg-surface p-4">
+                  <div class="mb-2.5 flex items-center justify-between">
+                    <h4 class="font-mono text-2xs uppercase tracking-[0.13em] text-gray-400">Progression</h4>
+                    <span class="font-mono text-2xs font-bold text-gold-600">{{ etapeLivraison(d.statut) }}/3</span>
+                  </div>
+                  <div class="h-1.5 overflow-hidden rounded-full bg-surface-alt">
+                    <div class="h-full rounded-full bg-gold-500 transition-all duration-300" [style.width.%]="etapeLivraison(d.statut) * (100 / 3)"></div>
+                  </div>
+                  <p class="mt-2.5 text-xs text-gray-500">Les sorties de stock ont été générées à la validation de la commande.</p>
+                </div>
+              }
+
               <!-- Total -->
               <div class="mb-5 flex items-center justify-between rounded-lg bg-ink-950 px-5 py-4 text-white">
                 <span class="text-sm font-semibold text-fog-100">Total TTC</span>
@@ -214,7 +240,7 @@
             }
           </div>
 
-          <!-- Actions -->
+          <!-- Actions (dépendent du statut : cycle EN_COURS -> VALIDEE -> EXPEDIEE -> LIVREE) -->
           @if (d.statut === 'EN_COURS') {
             <div class="flex gap-2.5 border-t border-line bg-surface px-6 py-4 max-sm:grid max-sm:grid-cols-1">
               <button type="button" class="btn btn-danger flex-1" [disabled]="actionEnCours() === d.id" (click)="annuler(d)">
@@ -224,6 +250,20 @@
               <button type="button" class="btn btn-or flex-1" [disabled]="actionEnCours() === d.id" (click)="valider(d)">
                 <app-icon name="check" [size]="15" />
                 {{ actionEnCours() === d.id ? 'Validation…' : 'Valider (sortie de stock)' }}
+              </button>
+            </div>
+          } @else if (d.statut === 'VALIDEE') {
+            <div class="border-t border-line bg-surface px-6 py-4">
+              <button type="button" class="btn btn-or w-full" [disabled]="actionEnCours() === d.id" (click)="expedier(d)">
+                <app-icon name="truck" [size]="15" />
+                {{ actionEnCours() === d.id ? 'Expédition…' : 'Marquer comme expédiée' }}
+              </button>
+            </div>
+          } @else if (d.statut === 'EXPEDIEE') {
+            <div class="border-t border-line bg-surface px-6 py-4">
+              <button type="button" class="btn btn-or w-full" [disabled]="actionEnCours() === d.id" (click)="livrer(d)">
+                <app-icon name="check-check" [size]="15" />
+                {{ actionEnCours() === d.id ? 'Confirmation…' : 'Confirmer la livraison' }}
               </button>
             </div>
           }

@@ -77,13 +77,32 @@ public class MvtStkService {
         return toResponseDTO(mouvement);
     }
 
+    /**
+     * Historique des mouvements, filtrable par article et/ou type. Le
+     * filtrage est poussé en SQL (§5.1) : on ne charge plus tout
+     * l'historique de l'entreprise en mémoire pour le filtrer en Java, mais
+     * seulement les lignes qui matchent les critères.
+     */
     public List<MvtStkResponseDTO> findAll(Long articleId, TypeMouvement type) {
-        return mvtStkRepository.findByEntrepriseIdOrderByDateMouvementDesc(currentUserService.getEntrepriseId())
-                .stream()
-                .filter(m -> articleId == null || articleId.equals(m.getArticle().getId()))
-                .filter(m -> type == null || type == m.getType())
-                .map(this::toResponseDTO)
-                .toList();
+        Long entrepriseId = currentUserService.getEntrepriseId();
+
+        if (articleId != null && type != null) {
+            return mvtStkRepository
+                    .findByEntrepriseIdAndArticleIdAndTypeOrderByDateMouvementDesc(entrepriseId, articleId, type)
+                    .stream().map(this::toResponseDTO).toList();
+        }
+        if (articleId != null) {
+            return mvtStkRepository
+                    .findByEntrepriseIdAndArticleIdOrderByDateMouvementDesc(entrepriseId, articleId)
+                    .stream().map(this::toResponseDTO).toList();
+        }
+        if (type != null) {
+            return mvtStkRepository
+                    .findByEntrepriseIdAndTypeOrderByDateMouvementDesc(entrepriseId, type)
+                    .stream().map(this::toResponseDTO).toList();
+        }
+        return mvtStkRepository.findByEntrepriseIdOrderByDateMouvementDesc(entrepriseId)
+                .stream().map(this::toResponseDTO).toList();
     }
 
     // Même logique de tenant que les autres Services (voir ArticleService) :

@@ -5,6 +5,9 @@ import { environment } from '../../../environments/environment';
 import {
   type ArticleStockDTO,
   type DashboardKpis,
+  type EntreeSortieJour,
+  type GraphiquesResponse,
+  type TopArticle,
   type VenteListe,
 } from '../models/dashboard.models';
 
@@ -36,6 +39,29 @@ export class DashboardService {
       ventes: this.http
         .get<VenteListe[]>(`${this.ventesUrl}`)
         .pipe(catchError(() => of<VenteListe[]>([]))),
+    });
+  }
+
+  /**
+   * Données des graphiques (évolution entrées/sorties + top articles).
+   * Tolérant aux erreurs : en cas d'échec, les deux séries tombent sur des
+   * tableaux vides et le dashboard affiche un état vide propre.
+   */
+  chargerGraphiques() {
+    return this.http.get<GraphiquesResponse>(`${this.apiUrl}/graphiques`).pipe(
+      catchError(() =>
+        of<GraphiquesResponse>({ evolutionStock: [], topArticles: [] })
+      )
+    );
+  }
+
+  /** Transforme la série backend en labels courts ("1 sept.", "2 oct."...). */
+  labelsJours(evolution: EntreeSortieJour[]): string[] {
+    return evolution.map((j) => {
+      const d = new Date(j.date + 'T00:00:00'); // ISO date-only → locale
+      return Number.isNaN(d.getTime())
+        ? j.date
+        : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     });
   }
 

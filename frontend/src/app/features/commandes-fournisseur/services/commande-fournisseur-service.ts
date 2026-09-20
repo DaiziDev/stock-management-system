@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { type CommandeFournisseur, type CommandeFournisseurRequest } from '../models/commande-fournisseur.model';
+import { type CommandeFournisseur, type CommandeFournisseurRequest, type ReceptionPartielleRequest } from '../models/commande-fournisseur.model';
 
 /**
  * Accès API du module commandes fournisseur. Pas de cache partagé :
@@ -37,6 +37,15 @@ export class CommandeFournisseurService {
    */
   receptionner(id: number): Observable<CommandeFournisseur> {
     return this.http.put<CommandeFournisseur>(`${this.apiUrl}/${id}/receptionner`, {});
+  }
+
+  /**
+   * Réception partielle (§3.5) : enregistre les quantités effectivement
+   * reçues, ligne par ligne. Le backend passe la commande à RECUE lui-même
+   * quand toutes les lignes sont satisfaites.
+   */
+  receptionnerPartiellement(id: number, dto: ReceptionPartielleRequest): Observable<CommandeFournisseur> {
+    return this.http.put<CommandeFournisseur>(`${this.apiUrl}/${id}/receptionner-partiel`, dto);
   }
 
   /** EN_ATTENTE -> ANNULEE, sans impact stock. */

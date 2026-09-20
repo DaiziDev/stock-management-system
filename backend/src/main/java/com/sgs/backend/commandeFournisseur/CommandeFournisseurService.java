@@ -7,6 +7,7 @@ import com.sgs.backend.commandeFournisseur.dto.CommandeFournisseurRequestDTO;
 import com.sgs.backend.commandeFournisseur.dto.CommandeFournisseurResponseDTO;
 import com.sgs.backend.commandeFournisseur.dto.LigneCommandeFournisseurRequestDTO;
 import com.sgs.backend.commandeFournisseur.dto.LigneCommandeFournisseurResponseDTO;
+import com.sgs.backend.commandeFournisseur.dto.ReceptionPartielleDTO;
 import com.sgs.backend.common.ResourceNotFoundException;
 import com.sgs.backend.config.CurrentUserService;
 import com.sgs.backend.fournisseur.Fournisseur;
@@ -22,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -69,29 +72,100 @@ public class CommandeFournisseurService {
     }
 
     /**
-     * EN_ATTENTE -> RECUE. Génère une entrée de stock par ligne (RG-03).
-     * Une commande déjà RECUE ne peut pas l'être une seconde fois -- sinon
-     * le stock serait compté deux fois (règle explicite du flux fonctionnel).
+     * -> RECUE (réception complète). Génère une entrée de stock par ligne (RG-03).
+     * Accepté depuis EN_ATTENTE comme depuis RECUE_PARTIELLEMENT (§3.5) : la
+     * réception finale du solde d'une commande partiellement reçue est une
+     * réception complète. Une commande déjà RECUE est refusée -- sinon le
+     * stock serait compté deux fois (règle explicite du flux fonctionnel).
      */
     @Transactional
     public CommandeFournisseurResponseDTO receptionner(Long id) {
         CommandeFournisseur commande = getCommandeOrThrow(id);
-        if (commande.getStatut() != StatutCommandeFournisseur.EN_ATTENTE) {
+        if (commande.getStatut() == StatutCommandeFournisseur.RECUE) {
             throw new IllegalArgumentException(
-                    "Seule une commande EN_ATTENTE peut être réceptionnée (statut actuel : " + commande.getStatut() + ")"
+                    "Cette commande est déjà reçue intégralement (le stock serait compté deux fois)"
+            );
+        }
+        if (commande.getStatut() == StatutCommandeFournisseur.ANNULEE) {
+            throw new IllegalArgumentException(
+                    "Une commande annulée ne peut pas être réceptionnée (statut actuel : " + commande.getStatut() + ")"
             );
         }
 
         for (LigneCommandeFournisseur ligne : commande.getLignes()) {
-            mvtStkService.enregistrerMouvement(
-                    ligne.getArticle(), TypeMouvement.ENTREE, ligne.getQuantite(), null, commande.getCode()
-            );
+            int reste = ligne.getQuantite() - ligne.getQuantiteRecue();
+            if (reste > 0) {
+                mvtStkService.enregistrerMouvement(
+                        ligne.getArticle(), TypeMouvement.ENTREE, reste, null, commande.getCode()
+                );
+            }
+            ligne.setQuantiteRecue(ligne.getQuantite());
         }
 
         commande.setStatut(StatutCommandeFournisseur.RECUE);
         return toResponseDTO(commandeFournisseurRepository.save(commande));
     }
 
+    /**
+     * EN_ATTENTE / RECUE_PARTIELLEMENT -> RECUE_PARTIELLEMENT (§3.5).
+     * Reçoit uniquement les quantités transmises : chaque ligne absente de la
+     * requête, ou avec quantiteRecue = 0, ne génère aucun mouvement. Les
+     * lignes déjà satisfaites ne peuvent pas être "re-reçues". Si toutes les
+     * lignes deviennent satisfaites, la commande passe automatiquement à RECUE
+     * (équivalent fonctionnel d'une réception complète).
+     */
+    @Transactional
+    public CommandeFournisseurResponseDTO receptionnerPartiellement(Long id, ReceptionPartielleDTO dto) {
+        CommandeFournisseur commande = getCommandeOrThrow(id);
+        if (commande.getStatut() != StatutCommandeFournisseur.EN_ATTENTE
+                && commande.getStatut() != StatutCommandeFournisseur.RECUE_PARTIELLEMENT) {
+            throw new IllegalArgumentException(
+                    "Seule une commande EN_ATTENTE ou RECUE_PARTIELLEMENT accepte une réception partielle "
+                            + "(statut actuel : " + commande.getStatut() + ")"
+            );
+        }
+
+        // Index des quantités demandées par ligne, pour rejeter les doublons.
+        Map<Long, Integer> quantitesDemandees = new HashMap<>();
+        for (ReceptionPartielleDTO.LigneRecueDTO ligneDto : dto.lignes()) {
+            if (quantitesDemandees.putIfAbsent(ligneDto.ligneId(), ligneDto.quantiteRecue()) != null) {
+                throw new IllegalArgumentException("La ligne " + ligneDto.ligneId() + " est présente deux fois dans la requête");
+            }
+        }
+
+        for (LigneCommandeFournisseur ligne : commande.getLignes()) {
+            Integer demandee = quantitesDemandees.get(ligne.getId());
+            if (demandee == null || demandee == 0) {
+                continue; // ligne non reçue dans cette réception partielle
+            }
+            int reste = ligne.getQuantite() - ligne.getQuantiteRecue();
+            if (demandee > reste) {
+                throw new IllegalArgumentException(
+                        "Quantité reçue invalide pour l'article " + ligne.getArticle().getDesignation()
+                                + " : " + demandee + " demandé(s), " + reste + " restant(s) à réceptionner"
+                );
+            }
+            mvtStkService.enregistrerMouvement(
+                    ligne.getArticle(), TypeMouvement.ENTREE, demandee, null, commande.getCode()
+            );
+            ligne.setQuantiteRecue(ligne.getQuantiteRecue() + demandee);
+        }
+
+        boolean toutRecu = commande.getLignes().stream()
+                .allMatch(l -> l.getQuantiteRecue() >= l.getQuantite());
+        if (toutRecu) {
+            commande.setStatut(StatutCommandeFournisseur.RECUE);
+        } else {
+            commande.setStatut(StatutCommandeFournisseur.RECUE_PARTIELLEMENT);
+        }
+        return toResponseDTO(commandeFournisseurRepository.save(commande));
+    }
+
+    /**
+     * EN_ATTENTE -> ANNULEE uniquement. Une commande RECUE_PARTIELLEMENT a
+     * déjà généré des entrées de stock : l'annuler nécessiterait des
+     * mouvements inverses, hors périmètre pour l'instant.
+     */
     public CommandeFournisseurResponseDTO annuler(Long id) {
         CommandeFournisseur commande = getCommandeOrThrow(id);
         if (commande.getStatut() != StatutCommandeFournisseur.EN_ATTENTE) {
@@ -162,6 +236,7 @@ public class CommandeFournisseurService {
                         l.getArticle().getId(),
                         l.getArticle().getDesignation(),
                         l.getQuantite(),
+                        l.getQuantiteRecue(),
                         l.getPrixUnitaire(),
                         l.getPrixUnitaire().multiply(BigDecimal.valueOf(l.getQuantite()))
                 ))

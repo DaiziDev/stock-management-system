@@ -78,6 +78,8 @@ public class SecurityConfig {
                 // ci-dessous pour recevoir un 401/403 propre à la place.
                 .requestMatchers(
                         "/api/auth/login",
+                        "/api/auth/refresh",      // refresh : le JWT est expiré, forcément anonyme
+                        "/api/auth/logout",       // logout : révocable même après expiration du JWT
                         "/swagger-ui.html",       // Swagger UI
                         "/swagger-ui/**",         // Swagger UI ressources
                         "/api-docs/**",           // OpenAPI docs

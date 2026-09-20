@@ -3,6 +3,7 @@ import { authGuard } from './core/guards/auth-guard';
 import { superAdminGuard, tenantGuard } from './core/guards/role-guards';
 import { Login } from './features/auth/login';
 import { BientotComponent } from './features/bientot/bientot.component';
+// ⚠️ Le placeholder BientotComponent reste utilisé par la route 404 (**).
 
 /**
  * Toutes les routes applicatives (hors /login) sont enfants d'une route vide
@@ -75,8 +76,8 @@ export const routes: Routes = [
       {
         path: 'utilisateurs',
         canActivate: [tenantGuard],
-        component: BientotComponent,
-        data: { titre: 'Utilisateurs & rôles' },
+        loadChildren: () =>
+          import('./features/utilisateurs/utilisateur.routes').then((m) => m.UTILISATEUR_ROUTES),
       },
       {
         path: 'commandes-client',

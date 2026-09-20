@@ -39,6 +39,16 @@ export class CommandeClientService {
     return this.http.put<CommandeClient>(`${this.apiUrl}/${id}/valider`, {});
   }
 
+  /** VALIDEE -> EXPEDIEE : marchandise remise au transporteur, aucun impact stock. */
+  expedier(id: number): Observable<CommandeClient> {
+    return this.http.put<CommandeClient>(`${this.apiUrl}/${id}/expedier`, {});
+  }
+
+  /** EXPEDIEE -> LIVREE (raccourci toléré depuis VALIDEE) : aucun impact stock. */
+  livrer(id: number): Observable<CommandeClient> {
+    return this.http.put<CommandeClient>(`${this.apiUrl}/${id}/livrer`, {});
+  }
+
   /** EN_COURS -> ANNULEE, sans impact stock. */
   annuler(id: number): Observable<CommandeClient> {
     return this.http.put<CommandeClient>(`${this.apiUrl}/${id}/annuler`, {});

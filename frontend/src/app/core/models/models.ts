@@ -24,9 +24,14 @@ export interface CurrentUser {
   login?: string;
 }
 
-/** Forme de la réponse POST /api/auth/login côté backend (LoginResponse). */
+/**
+ * Forme de la réponse POST /api/auth/login et /api/auth/refresh côté backend
+ * (AuthTokensDTO). Le refresh token (§6.3) sert à obtenir un nouveau couple
+ * de tokens sans redemander les identifiants quand le JWT de 24h expire.
+ */
 export interface LoginResponse {
   token: string;
+  refreshToken: string;
   user: {
     id: number;
     nom: string;

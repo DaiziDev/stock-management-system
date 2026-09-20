@@ -49,6 +49,22 @@ public class CommandeClientController {
         return ResponseEntity.ok(commandeClientService.valider(id));
     }
 
+    @PutMapping("/{id}/expedier")
+    @Operation(summary = "🚚 Marquer la commande comme expédiée", description = "VALIDEE -> EXPEDIEE. Aucun impact stock : les sorties ont été générées à la validation.")
+    public ResponseEntity<CommandeClientResponseDTO> expedier(
+            @Parameter(description = "ID de la commande") @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(commandeClientService.expedier(id));
+    }
+
+    @PutMapping("/{id}/livrer")
+    @Operation(summary = "📦 Marquer la commande comme livrée", description = "EXPEDIEE -> LIVREE (raccourci toléré depuis VALIDEE). Aucun impact stock.")
+    public ResponseEntity<CommandeClientResponseDTO> livrer(
+            @Parameter(description = "ID de la commande") @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(commandeClientService.livrer(id));
+    }
+
     @PutMapping("/{id}/annuler")
     @Operation(summary = "🚫 Annuler la commande", description = "Possible uniquement tant que la commande est EN_COURS.")
     public ResponseEntity<CommandeClientResponseDTO> annuler(

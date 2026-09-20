@@ -31,6 +31,8 @@ export class CommandeClientList implements OnInit {
     { v: 'TOUS', l: 'Toutes' },
     { v: 'EN_COURS', l: 'En cours' },
     { v: 'VALIDEE', l: 'Validées' },
+    { v: 'EXPEDIEE', l: 'Expédiées' },
+    { v: 'LIVREE', l: 'Livrées' },
     { v: 'ANNULEE', l: 'Annulées' },
   ];
 
@@ -57,7 +59,11 @@ export class CommandeClientList implements OnInit {
 
   readonly nbEnCours = computed(() => this.commandes().filter((c) => c.statut === 'EN_COURS').length);
   readonly nbValidees = computed(() => this.commandes().filter((c) => c.statut === 'VALIDEE').length);
+  readonly nbExpediees = computed(() => this.commandes().filter((c) => c.statut === 'EXPEDIEE').length);
+  readonly nbLivrees = computed(() => this.commandes().filter((c) => c.statut === 'LIVREE').length);
   readonly nbAnnulees = computed(() => this.commandes().filter((c) => c.statut === 'ANNULEE').length);
+  /** Commandes en cours d'acheminement : validées (stock déjà sorti), expédiées ou livrées. */
+  readonly nbEnLivraison = computed(() => this.nbValidees() + this.nbExpediees() + this.nbLivrees());
 
   ngOnInit(): void {
     this.charger();
@@ -134,13 +140,78 @@ export class CommandeClientList implements OnInit {
     });
   }
 
+  /** VALIDEE -> EXPEDIEE : marchandise remise au transporteur, aucun impact stock. */
+  expedier(c: CommandeClient): void {
+    if (this.actionEnCours() !== null) return;
+    if (!confirm(`Marquer la commande ${c.code} comme expédiée ?`)) return;
+    this.actionEnCours.set(c.id);
+    this.erreurAction.set(null);
+    this.commandeService.expedier(c.id).subscribe({
+      next: (maj) => {
+        this.remplacer(maj);
+        this.actionEnCours.set(null);
+        this.detail.set(maj);
+      },
+      error: (err) => {
+        this.actionEnCours.set(null);
+        const msg = (err?.error?.message as string) ?? null;
+        this.erreurAction.set(msg ?? "Expédition impossible (la commande doit être validée).");
+      },
+    });
+  }
+
+  /** EXPEDIEE -> LIVREE (raccourci toléré depuis VALIDEE) : livraison confirmée. */
+  livrer(c: CommandeClient): void {
+    if (this.actionEnCours() !== null) return;
+    if (!confirm(`Marquer la commande ${c.code} comme livrée ?`)) return;
+    this.actionEnCours.set(c.id);
+    this.erreurAction.set(null);
+    this.commandeService.livrer(c.id).subscribe({
+      next: (maj) => {
+        this.remplacer(maj);
+        this.actionEnCours.set(null);
+        this.detail.set(maj);
+      },
+      error: (err) => {
+        this.actionEnCours.set(null);
+        const msg = (err?.error?.message as string) ?? null;
+        this.erreurAction.set(msg ?? 'Livraison impossible (la commande doit être validée ou expédiée).');
+      },
+    });
+  }
+
   /** Met à jour la liste ET le panneau de détail avec la version fraîche. */
   private remplacer(maj: CommandeClient): void {
     this.commandes.update((liste) => liste.map((c) => (c.id === maj.id ? maj : c)));
   }
 
   libelleStatut(statut: StatutCommandeClient): string {
-    return statut === 'EN_COURS' ? 'En cours' : statut === 'VALIDEE' ? 'Validée' : 'Annulée';
+    switch (statut) {
+      case 'EN_COURS':
+        return 'En cours';
+      case 'VALIDEE':
+        return 'Validée';
+      case 'EXPEDIEE':
+        return 'Expédiée';
+      case 'LIVREE':
+        return 'Livrée';
+      default:
+        return 'Annulée';
+    }
+  }
+
+  /** Progression logistique (0-3) pour la barre du panneau détail. */
+  etapeLivraison(statut: StatutCommandeClient): number {
+    switch (statut) {
+      case 'VALIDEE':
+        return 1;
+      case 'EXPEDIEE':
+        return 2;
+      case 'LIVREE':
+        return 3;
+      default:
+        return 0;
+    }
   }
 
   montant(v: number | string | null | undefined): string {

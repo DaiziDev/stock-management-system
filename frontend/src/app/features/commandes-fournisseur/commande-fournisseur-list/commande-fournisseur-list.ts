@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { type LigneCommandeFournisseur } from '../models/commande-fournisseur.model';
 import { RouterLink } from '@angular/router';
 import { CommandeFournisseurService } from '../services/commande-fournisseur-service';
 import { AppIcon } from '../../../shared/components/icon/icon';
@@ -31,6 +32,7 @@ export class CommandeFournisseurList implements OnInit {
   readonly filtres: { v: 'TOUS' | StatutCommandeFournisseur; l: string }[] = [
     { v: 'TOUS', l: 'Toutes' },
     { v: 'EN_ATTENTE', l: 'En attente' },
+    { v: 'RECUE_PARTIELLEMENT', l: 'Partielles' },
     { v: 'RECUE', l: 'Reçues' },
     { v: 'ANNULEE', l: 'Annulées' },
   ];
@@ -54,8 +56,16 @@ export class CommandeFournisseurList implements OnInit {
   });
 
   readonly nbEnAttente = computed(() => this.commandes().filter((c) => c.statut === 'EN_ATTENTE').length);
+  readonly nbPartielles = computed(() => this.commandes().filter((c) => c.statut === 'RECUE_PARTIELLEMENT').length);
   readonly nbRecues = computed(() => this.commandes().filter((c) => c.statut === 'RECUE').length);
   readonly nbAnnulees = computed(() => this.commandes().filter((c) => c.statut === 'ANNULEE').length);
+
+  /**
+   * Quantités saisies pour la réception partielle (§3.5), indexées par id de
+   * ligne. Initialisées au solde restant quand le détail d'une commande
+   * réceptionnable est ouvert ; l'utilisateur ajuste ce qu'il reçoit réellement.
+   */
+  readonly quantitesPartielles = signal<Record<number, number>>({});
 
   ngOnInit(): void {
     this.charger();
@@ -85,18 +95,31 @@ export class CommandeFournisseurList implements OnInit {
       next: (fraiche) => {
         this.detail.set(fraiche);
         this.detailChargement.set(false);
+        this.initQuantitesPartielles(fraiche);
       },
       error: () => this.detailChargement.set(false),
     });
   }
 
-  fermerDetail(): void {
-    this.detail.set(null);
+  /** Pré-remplit les quantités partielles avec le solde restant de chaque ligne. */
+  private initQuantitesPartielles(c: CommandeFournisseur): void {
+    const receptive = c.statut === 'EN_ATTENTE' || c.statut === 'RECUE_PARTIELLEMENT';
+    if (!receptive) {
+      this.quantitesPartielles.set({});
+      return;
+    }
+    const valeurs: Record<number, number> = {};
+    for (const l of c.lignes) {
+      valeurs[l.id] = this.resteLigne(l);
+    }
+    this.quantitesPartielles.set(valeurs);
   }
 
-  receptionner(c: CommandeFournisseur): void {
+  fermerDetail(): void {
+    this.detail.set(null);
+  }  receptionner(c: CommandeFournisseur): void {
     if (this.actionEnCours() !== null) return;
-    if (!confirm(`Réceptionner la commande ${c.code} ?\nLe stock sera incrémenté pour chaque ligne.`)) return;
+    if (!confirm(`Réceptionner la commande ${c.code} en intégralité ?\nLe stock sera incrémenté du solde restant pour chaque ligne.`)) return;
     this.actionEnCours.set(c.id);
     this.erreurAction.set(null);
     this.commandeService.receptionner(c.id).subscribe({
@@ -104,6 +127,7 @@ export class CommandeFournisseurList implements OnInit {
         this.remplacer(maj);
         this.actionEnCours.set(null);
         this.detail.set(maj);
+        this.initQuantitesPartielles(maj);
       },
       error: (err) => {
         this.actionEnCours.set(null);
@@ -111,6 +135,52 @@ export class CommandeFournisseurList implements OnInit {
         this.erreurAction.set(msg ?? 'Réception refusée (commande déjà reçue ou annulée ?).');
       },
     });
+  }
+
+  /**
+   * Réception partielle (§3.5) : envoie les quantités saisies, ligne par
+   * ligne. Le backend bascule la commande en RECUE si tout est satisfait.
+   */
+  receptionPartielle(c: CommandeFournisseur): void {
+    if (this.actionEnCours() !== null) return;
+    const lignes = Object.entries(this.quantitesPartielles())
+      .map(([id, qte]) => ({ ligneId: Number(id), quantiteRecue: Number(qte) || 0 }))
+      .filter((l) => l.quantiteRecue > 0);
+    if (lignes.length === 0) {
+      this.erreurAction.set('Saisissez au moins une quantité à réceptionner.');
+      return;
+    }
+    this.actionEnCours.set(c.id);
+    this.erreurAction.set(null);
+    this.commandeService.receptionnerPartiellement(c.id, { lignes }).subscribe({
+      next: (maj) => {
+        this.remplacer(maj);
+        this.actionEnCours.set(null);
+        this.detail.set(maj);
+        this.initQuantitesPartielles(maj);
+      },
+      error: (err) => {
+        this.actionEnCours.set(null);
+        const msg = (err?.error?.message as string) ?? null;
+        this.erreurAction.set(msg ?? 'Réception partielle refusée (quantités invalides ?).');
+      },
+    });
+  }
+
+  /** Solde restant à réceptionner sur une ligne. */
+  resteLigne(l: LigneCommandeFournisseur): number {
+    return Math.max(0, l.quantite - (l.quantiteRecue ?? 0));
+  }
+
+  /** Quantité partielle saisie pour une ligne (fallback : solde restant). */
+  quantiteSaisie(l: LigneCommandeFournisseur): number {
+    const saisie = this.quantitesPartielles()[l.id];
+    return saisie === undefined ? this.resteLigne(l) : saisie;
+  }
+
+  saisirQuantite(l: LigneCommandeFournisseur, valeur: number): void {
+    const borne = Math.min(Math.max(0, Math.floor(valeur) || 0), this.resteLigne(l));
+    this.quantitesPartielles.update((m) => ({ ...m, [l.id]: borne }));
   }
 
   annuler(c: CommandeFournisseur): void {
@@ -138,7 +208,26 @@ export class CommandeFournisseurList implements OnInit {
   }
 
   libelleStatut(statut: StatutCommandeFournisseur): string {
-    return statut === 'EN_ATTENTE' ? 'En attente' : statut === 'RECUE' ? 'Reçue' : 'Annulée';
+    switch (statut) {
+      case 'EN_ATTENTE':
+        return 'En attente';
+      case 'RECUE_PARTIELLEMENT':
+        return 'Partiellement reçue';
+      case 'RECUE':
+        return 'Reçue';
+      default:
+        return 'Annulée';
+    }
+  }
+
+  /** Total des unités déjà reçues sur une commande (résumé de progression). */
+  totalRecu(c: CommandeFournisseur): number {
+    return c.lignes.reduce((n, l) => n + (l.quantiteRecue ?? 0), 0);
+  }
+
+  /** Total des unités commandées (résumé de progression). */
+  totalCommande(c: CommandeFournisseur): number {
+    return c.lignes.reduce((n, l) => n + l.quantite, 0);
   }
 
   montant(v: number | string | null | undefined): string {

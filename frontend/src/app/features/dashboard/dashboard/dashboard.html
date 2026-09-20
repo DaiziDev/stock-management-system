@@ -145,6 +145,53 @@
       </div>
     </div>
 
+    <!-- ═══════════ Graphiques Chart.js (30 jours) ═══════════ -->
+    <div class="mb-4.5 grid grid-cols-5 gap-4.5 max-lg:grid-cols-1">
+      <!-- Évolution des entrées / sorties de stock (aire, 30 jours) -->
+      <div class="col-span-3 flex flex-col rounded-lg border border-line bg-surface p-5.5">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="font-display text-lg font-[650]">Évolution des entrées / sorties</h3>
+            <p class="mt-0.5 text-xs text-gray-400">Mouvements de stock sur 30 jours</p>
+          </div>
+          <span class="rounded-full bg-surface-alt px-2.5 py-1 font-mono text-2xs uppercase tracking-[0.08em] text-gray-400">30 jours</span>
+        </div>
+        @if (aEvolution()) {
+          <app-chart [config]="configEvolutionStock()" [height]="230" class="block" />
+        } @else {
+          <div class="flex flex-1 items-center justify-center py-10 text-center">
+            <div>
+              <app-icon class="mx-auto mb-3 opacity-40" name="arrow-left-right" [size]="34" />
+              <b class="block text-sm text-gray-600">Aucun mouvement de stock</b>
+              <span class="mt-1 text-xs text-gray-400">Réceptionnez une commande ou enregistrez une vente.</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Top 5 articles les plus vendus (barres horizontales) -->
+      <div class="col-span-2 flex flex-col rounded-lg border border-line bg-surface p-5.5">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="font-display text-lg font-[650]">Top articles vendus</h3>
+            <p class="mt-0.5 text-xs text-gray-400">5 meilleures ventes sur 30 jours</p>
+          </div>
+          <span class="rounded-full bg-surface-alt px-2.5 py-1 font-mono text-2xs uppercase tracking-[0.08em] text-gray-400">Top 5</span>
+        </div>
+        @if (aTopArticles()) {
+          <app-chart [config]="configTopArticles()" [height]="230" class="block" />
+        } @else {
+          <div class="flex flex-1 items-center justify-center py-10 text-center">
+            <div>
+              <app-icon class="mx-auto mb-3 opacity-40" name="bar-chart-3" [size]="34" />
+              <b class="block text-sm text-gray-600">Aucune vente sur la période</b>
+              <span class="mt-1 text-xs text-gray-400">Le classement apparaît dès la première vente.</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
     <!-- ═══════════ Dernières ventes ═══════════ -->
     <div class="rounded-lg border border-line bg-surface p-5.5">
       <div class="mb-4 flex items-center justify-between">

@@ -1,5 +1,8 @@
-/** Cycle de vie côté backend : StatutCommandeFournisseur (EN_ATTENTE -> RECUE / ANNULEE). */
-export type StatutCommandeFournisseur = 'EN_ATTENTE' | 'RECUE' | 'ANNULEE';
+/**
+ * Cycle de vie côté backend : StatutCommandeFournisseur (§3.5).
+ * EN_ATTENTE -> RECUE_PARTIELLEMENT -> RECUE, ou ANNULEE (depuis EN_ATTENTE).
+ */
+export type StatutCommandeFournisseur = 'EN_ATTENTE' | 'RECUE_PARTIELLEMENT' | 'RECUE' | 'ANNULEE';
 
 /** Ligne d'une commande d'achat — prix en HT (on achète hors taxes). */
 export interface LigneCommandeFournisseur {
@@ -7,6 +10,8 @@ export interface LigneCommandeFournisseur {
   articleId: number;
   articleDesignation: string;
   quantite: number;
+  /** Quantité déjà réceptionnée (réception partielle, §3.5). Toujours <= quantite. */
+  quantiteRecue: number;
   prixUnitaire: number;
   sousTotal: number;
 }
@@ -27,4 +32,9 @@ export interface CommandeFournisseur {
 export interface CommandeFournisseurRequest {
   fournisseurId: number;
   lignes: { articleId: number; quantite: number }[];
+}
+
+/** Charge utile de PUT /api/commandes-fournisseur/{id}/receptionner-partiel. */
+export interface ReceptionPartielleRequest {
+  lignes: { ligneId: number; quantiteRecue: number }[];
 }

@@ -3,7 +3,6 @@ package com.sgs.backend.config;
 import com.sgs.backend.entreprise.Entreprise;
 import com.sgs.backend.entreprise.EntrepriseRepository;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import com.sgs.backend.roles.UserRole;
 import com.sgs.backend.utilisateur.Utilisateur;
 import com.sgs.backend.utilisateur.UtilisateurRepository;
@@ -39,48 +38,11 @@ public class DataInitializer implements CommandLineRunner {
     private final UtilisateurRepository utilisateurRepository;
     private final EntrepriseRepository entrepriseRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
-        elargirColonnePhotoSiNecessaire();
         upgraderBootstrapEnSuperAdmin();
         creerEntrepriseDemo();
-    }
-
-    /**
-     * La photo d'article est stockée en base64 (data URL) : une colonne
-     * varchar(255) créée par une ancienne version du schéma rejette la
-     * donnée ("valeur trop longue pour le type character varying(255)").
-     * On l'élargit en TEXT, une seule fois, en interrogeant le schéma réel.
-     *
-     * NB : information_schema.columns.data_type renvoie le NOM du type
-     * PostgreSQL ("character varying"), pas son OID interne — une première
-     * version comparait à l'OID 1043 et ne matchait jamais.
-     */
-    private void elargirColonnePhotoSiNecessaire() {
-        try {
-            // Hibernate (ddl-auto: update) ne modifie JAMAIS le type d'une
-            // colonne existante : c'est à nous de le faire, ici.
-            String typeColonne = jdbcTemplate.query(
-                    "SELECT data_type FROM information_schema.columns " +
-                    "WHERE table_name = 'article' AND column_name = 'photo'",
-                    (rs, i) -> rs.getString(1))
-                    .stream().findFirst().orElse(null);
-
-            if (typeColonne == null) {
-                log.info("ℹ️ Table article absente : la colonne photo sera créée directement en TEXT.");
-            } else if ("character varying".equals(typeColonne)) {
-                jdbcTemplate.execute("ALTER TABLE article ALTER COLUMN photo TYPE text");
-                log.info("✅ Colonne article.photo élargie varchar -> TEXT (photos en base64)");
-            } else {
-                log.info("ℹ️ Colonne article.photo déjà en {}", typeColonne);
-            }
-        } catch (Exception ex) {
-            // SGBD atypique ou DB momentanément indisponible : ne jamais
-            // bloquer le démarrage pour une migration de confort.
-            log.warn("Élargissement colonne photo non appliqué : {}", ex.getMessage());
-        }
     }
 
     /**

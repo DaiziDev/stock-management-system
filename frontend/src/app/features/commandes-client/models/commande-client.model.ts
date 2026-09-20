@@ -1,5 +1,8 @@
-/** Cycle de vie côté backend : StatutCommandeClient (EN_COURS -> VALIDEE / ANNULEE). */
-export type StatutCommandeClient = 'EN_COURS' | 'VALIDEE' | 'ANNULEE';
+/**
+ * Cycle de vie côté backend : StatutCommandeClient (§3.4).
+ * EN_COURS -> VALIDEE (sorties de stock) -> EXPEDIEE -> LIVREE, ou ANNULEE.
+ */
+export type StatutCommandeClient = 'EN_COURS' | 'VALIDEE' | 'EXPEDIEE' | 'LIVREE' | 'ANNULEE';
 
 /** Ligne d'une commande — LigneCommandeResponseDTO côté backend. */
 export interface LigneCommande {
