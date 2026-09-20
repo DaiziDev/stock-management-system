@@ -16,6 +16,7 @@ interface MeResponse {
 }
 
 const TOKEN_KEY = 'sgs.token';
+const REFRESH_KEY = 'sgs.refreshToken';
 const USER_KEY = 'sgs.currentUser';
 
 @Injectable({ providedIn: 'root' })
@@ -33,20 +34,47 @@ export class AuthService {
    */
   login(login: string, motDePasse: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { login, motDePasse }).pipe(
-      tap((response) => {
-        const user: CurrentUser = {
-          id: response.user.id,
-          nom: `${response.user.prenom} ${response.user.nom}`.trim(),
-          role: response.user.role,
-          entrepriseId: response.user.entrepriseId,
-          entrepriseName: response.user.entrepriseNom,
-          login: response.user.login,
-        };
-        localStorage.setItem(TOKEN_KEY, response.token);
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
-        this.user.set(user);
-      })
+      tap((response) => this.memoriserSession(response))
     );
+  }
+
+  /**
+   * Échange le refresh token contre un nouveau couple JWT + refresh
+   * (rotation côté backend : l'ancien refresh devient inutilisable).
+   * Appelé par l'errorInterceptor quand le backend répond 401 avec le
+   * flag `tokenExpiré` — permet de prolonger la session sans repasser
+   * par /login tant que le refresh token (7 jours) est valide.
+   */
+  refreshSession(): Observable<LoginResponse | null> {
+    const refreshToken = localStorage.getItem(REFRESH_KEY);
+    // Pas de refresh token stocké : rien à tenter (visiteur anonyme ou
+    // session déjà consommée) — on refuse sans appel réseau.
+    if (!refreshToken) {
+      return of(null);
+    }
+    return this.http
+      .post<LoginResponse>(`${this.apiUrl}/refresh`, { refreshToken })
+      .pipe(
+        tap((response) => this.memoriserSession(response)),
+        catchError(() => of(null)),
+      );
+  }
+
+  /**
+   * Déconnexion : révoque le refresh token côté serveur (best-effort :
+   * même si l'appel échoue, on purge le localStorage pour forcer la
+   * reconnexion locale), puis nettoie l'état local.
+   */
+  logout(): void {
+    const refreshToken = localStorage.getItem(REFRESH_KEY);
+    if (refreshToken) {
+      // Fire-and-forget : la déconnexion locale ne doit pas dépendre du réseau.
+      this.http.post(`${this.apiUrl}/logout`, { refreshToken }).subscribe({ error: () => void 0 });
+    }
+    this.user.set(null);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    localStorage.removeItem(USER_KEY);
   }
 
   /**
@@ -92,15 +120,26 @@ export class AuthService {
     );
   }
 
-  logout(): void {
+  /**
+   * Purge locale seule (sans appel serveur) : utilisée quand la session est
+   * définitivement morte (refresh token absent/invalide) — appeler le
+   * serveur serait inutile, voire créerait une boucle d'erreurs.
+   */
+  logoutLocal(): void {
     this.user.set(null);
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(USER_KEY);
   }
 
   /** Lu par l'intercepteur HTTP pour poser le header Authorization. */
   getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY);
+  }
+
+  /** Lu par l'errorInterceptor pour tenter un renouvellement avant déconnexion. */
+  getRefreshToken(): string | null {
+    return localStorage.getItem(REFRESH_KEY);
   }
 
   /** ⭐ Vérifie si l'utilisateur courant possède l'un des rôles donnés. */
@@ -125,5 +164,21 @@ export class AuthService {
     } catch {
       return null;
     }
+  }
+
+  /** Stocke le couple de tokens + le profil, et met à jour le signal user. */
+  private memoriserSession(response: LoginResponse): void {
+    const user: CurrentUser = {
+      id: response.user.id,
+      nom: `${response.user.prenom} ${response.user.nom}`.trim(),
+      role: response.user.role,
+      entrepriseId: response.user.entrepriseId,
+      entrepriseName: response.user.entrepriseNom,
+      login: response.user.login,
+    };
+    localStorage.setItem(TOKEN_KEY, response.token);
+    localStorage.setItem(REFRESH_KEY, response.refreshToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    this.user.set(user);
   }
 }

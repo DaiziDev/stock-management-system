@@ -404,7 +404,8 @@
   }
 
   /* Badge de statut de commande — couleur pilotée par data-statut
-     (EN_COURS or, VALIDEE vert, ANNULEE rouge). Compatibilité dark mode
+     (EN_COURS/EN_ATTENTE or, VALIDEE/RECUE/LIVREE vert, EXPEDIEE/
+     RECUE_PARTIELLEMENT bleu, ANNULEE rouge). Compatibilité dark mode
      via les tokens sémantiques. */
   .badge-statut {
     display: inline-flex;
@@ -430,6 +431,18 @@
   .badge-statut[data-statut='RECUE'] {
     background: var(--color-success-bg);
     color: var(--color-success);
+  }
+  .badge-statut[data-statut='EXPEDIEE'] {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+  }
+  .badge-statut[data-statut='LIVREE'] {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+  .badge-statut[data-statut='RECUE_PARTIELLEMENT'] {
+    background: var(--color-info-bg);
+    color: var(--color-info);
   }
   .badge-statut[data-statut='ANNULEE'] {
     background: var(--color-danger-bg);

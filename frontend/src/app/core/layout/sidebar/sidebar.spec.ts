@@ -1,16 +1,30 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Sidebar } from './sidebar';
 import { AuthService } from '../../services/services';
+import type { CurrentUser } from '../../models/models';
 
 describe('Sidebar — filtre par rôle', () => {
   function createSidebar(role: 'ADMIN' | 'VENDEUR' | 'GESTIONNAIRE') {
     TestBed.configureTestingModule({
       imports: [Sidebar],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     });
     const auth = TestBed.inject(AuthService);
-    auth.login(`${role.toLowerCase()}@sgs.local`, role);
+    // Anciennement auth.login() (qui appelait le backend) : ici on pose
+    // directement le profil, ce qui suffit pour tester le filtre de menu.
+    const user: CurrentUser = {
+      id: 1,
+      nom: 'Test ' + role,
+      role,
+      entrepriseId: 7,
+      entrepriseName: 'SGS',
+      login: `${role.toLowerCase()}@sgs.local`,
+    };
+    localStorage.setItem('sgs.currentUser', JSON.stringify(user));
+    auth.user.set(user);
 
     const fixture = TestBed.createComponent(Sidebar);
     fixture.detectChanges();

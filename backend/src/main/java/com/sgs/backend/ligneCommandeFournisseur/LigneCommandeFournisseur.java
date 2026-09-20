@@ -22,6 +22,13 @@ public class LigneCommandeFournisseur extends AbstractEntity {
     @Column(name = "quantite", nullable = false)
     private int quantite;
 
+    /**
+     * Quantité déjà réceptionnée pour cette ligne (§3.5 : réception partielle).
+     * Toujours <= quantite. Une ligne est "satisfaite" quand les deux sont égales.
+     */
+    @Column(name = "quantiterecue", nullable = false)
+    private int quantiteRecue = 0;
+
     // Copié depuis Article.prixUnitaireHt (prix d'achat, pas le prix de
     // vente TTC utilisé côté CommandeClient/Vente) au moment de la commande.
     @Column(name = "prixunitaire", nullable = false)

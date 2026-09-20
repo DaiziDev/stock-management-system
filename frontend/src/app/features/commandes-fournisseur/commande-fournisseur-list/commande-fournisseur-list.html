@@ -33,6 +33,10 @@
         <b class="mt-1 block font-display text-2xl font-[650] text-gold-600">{{ nbEnAttente() }}</b>
       </div>
       <div class="carte p-4">
+        <span class="text-2xs font-semibold uppercase tracking-wider text-gray-400">Partielles</span>
+        <b class="mt-1 block font-display text-2xl font-[650] text-info">{{ nbPartielles() }}</b>
+      </div>
+      <div class="carte p-4">
         <span class="text-2xs font-semibold uppercase tracking-wider text-gray-400">Reçues</span>
         <b class="mt-1 block font-display text-2xl font-[650] text-success">{{ nbRecues() }}</b>
       </div>
@@ -100,7 +104,7 @@
                 <span class="font-mono text-sm font-bold text-gold-600">{{ montant(c.total) }}</span>
                 <div class="flex gap-1.5">
                   <button type="button" class="btn btn-secondaire px-3 py-1.5 text-xs" (click)="ouvrirDetail(c)">Détail</button>
-                  @if (c.statut === 'EN_ATTENTE') {
+                  @if (c.statut === 'EN_ATTENTE' || c.statut === 'RECUE_PARTIELLEMENT') {
                     <button type="button" class="btn btn-primaire px-3 py-1.5 text-xs" [disabled]="actionEnCours() === c.id" (click)="receptionner(c)">Réceptionner</button>
                   }
                 </div>
@@ -137,7 +141,7 @@
                   <td class="td">
                     <div class="flex justify-end gap-1.5">
                       <button type="button" class="btn btn-secondaire px-3 py-1.5 text-xs" (click)="ouvrirDetail(c)">Détail</button>
-                      @if (c.statut === 'EN_ATTENTE') {
+                      @if (c.statut === 'EN_ATTENTE' || c.statut === 'RECUE_PARTIELLEMENT') {
                         <button type="button" class="btn btn-primaire px-3 py-1.5 text-xs" [disabled]="actionEnCours() === c.id" (click)="receptionner(c)">Réceptionner</button>
                       }
                     </div>
@@ -191,10 +195,18 @@
               <ul class="mb-5 divide-y divide-line rounded-lg border border-line bg-surface">
                 @for (l of d.lignes; track l.id) {
                   <li class="flex items-center gap-3 px-4 py-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-alt font-mono text-xs font-bold text-gray-600">
+                    <span
+                      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md font-mono text-xs font-bold"
+                      [class]="resteLigne(l) === 0 ? 'bg-success-bg text-success' : 'bg-surface-alt text-gray-600'"
+                    >
                       ×{{ l.quantite }}
                     </span>
-                    <span class="min-w-0 flex-1 truncate text-[13.5px] font-semibold">{{ l.articleDesignation }}</span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-[13.5px] font-semibold">{{ l.articleDesignation }}</span>
+                      @if (l.quantiteRecue > 0 && resteLigne(l) > 0) {
+                        <span class="block font-mono text-2xs text-info">{{ l.quantiteRecue }} / {{ l.quantite }} reçue(s)</span>
+                      }
+                    </span>
                     <span class="shrink-0 text-right">
                       <span class="block font-mono text-[13px] font-bold">{{ montant(l.sousTotal) }}</span>
                       <span class="block font-mono text-2xs text-gray-400">{{ montant(l.prixUnitaire) }} / u.</span>
@@ -207,6 +219,60 @@
                 <div class="mb-4 rounded-sm border border-danger/30 bg-danger-bg px-3.5 py-2.5 text-sm text-danger">{{ erreurAction() }}</div>
               }
 
+              <!-- Réception partielle (§3.5) : saisie des quantités effectivement reçues -->
+              @if (d.statut === 'EN_ATTENTE' || d.statut === 'RECUE_PARTIELLEMENT') {
+                <div class="mb-5 rounded-lg border border-line bg-surface p-4">
+                  <div class="mb-3 flex items-center justify-between">
+                    <h4 class="font-mono text-2xs uppercase tracking-[0.13em] text-gray-400">Réception partielle</h4>
+                    <span class="font-mono text-2xs text-gray-400">{{ totalRecu(d) }} / {{ totalCommande(d) }} u.</span>
+                  </div>
+                  <ul class="space-y-2.5">
+                    @for (l of d.lignes; track l.id) {
+                      @if (resteLigne(l) > 0) {
+                        <li class="flex items-center gap-2.5">
+                          <span class="min-w-0 flex-1 truncate text-[13px] font-semibold">{{ l.articleDesignation }}</span>
+                          <span class="shrink-0 font-mono text-2xs text-gray-400">reste {{ resteLigne(l) }}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            [max]="resteLigne(l)"
+                            [value]="quantiteSaisie(l)"
+                            (input)="saisirQuantite(l, $any($event.target).valueAsNumber)"
+                            class="w-20 shrink-0 rounded-sm border-[1.5px] border-line bg-canvas px-2 py-1.5 text-right font-mono text-[13px] focus:border-ink-700 focus:outline-none"
+                          />
+                        </li>
+                      }
+                    }
+                  </ul>
+                  <button
+                    type="button"
+                    class="btn btn-secondaire mt-3.5 w-full"
+                    [disabled]="actionEnCours() === d.id"
+                    (click)="receptionPartielle(d)"
+                  >
+                    <app-icon name="package" [size]="15" />
+                    {{ actionEnCours() === d.id ? 'Réception…' : 'Enregistrer la réception partielle' }}
+                  </button>
+                </div>
+              }
+
+              <!-- Progression de réception -->
+              @if (d.statut !== 'EN_ATTENTE' && d.statut !== 'ANNULEE') {
+                <div class="mb-5 rounded-lg border border-line bg-surface p-4">
+                  <div class="mb-2.5 flex items-center justify-between">
+                    <h4 class="font-mono text-2xs uppercase tracking-[0.13em] text-gray-400">Progression de réception</h4>
+                    <span class="font-mono text-2xs font-bold text-gold-600">{{ totalRecu(d) }} / {{ totalCommande(d) }} u.</span>
+                  </div>
+                  <div class="h-1.5 overflow-hidden rounded-full bg-surface-alt">
+                    <div
+                      class="h-full rounded-full transition-all duration-300"
+                      [class]="d.statut === 'RECUE' ? 'bg-success' : 'bg-gold-500'"
+                      [style.width.%]="totalCommande(d) > 0 ? (totalRecu(d) * 100 / totalCommande(d)) : 0"
+                    ></div>
+                  </div>
+                </div>
+              }
+
               <!-- Total -->
               <div class="mb-5 flex items-center justify-between rounded-lg bg-ink-950 px-5 py-4 text-white">
                 <span class="text-sm font-semibold text-fog-100">Total HT</span>
@@ -215,7 +281,7 @@
             }
           </div>
 
-          <!-- Actions -->
+          <!-- Actions (réception complète du solde, ou annulation si rien n'a bougé) -->
           @if (d.statut === 'EN_ATTENTE') {
             <div class="flex gap-2.5 border-t border-line bg-surface px-6 py-4 max-sm:grid max-sm:grid-cols-1">
               <button type="button" class="btn btn-danger flex-1" [disabled]="actionEnCours() === d.id" (click)="annuler(d)">
@@ -224,7 +290,14 @@
               </button>
               <button type="button" class="btn btn-or flex-1" [disabled]="actionEnCours() === d.id" (click)="receptionner(d)">
                 <app-icon name="check" [size]="15" />
-                {{ actionEnCours() === d.id ? 'Réception…' : 'Réceptionner (entrée de stock)' }}
+                {{ actionEnCours() === d.id ? 'Réception…' : 'Réception complète (entrée de stock)' }}
+              </button>
+            </div>
+          } @else if (d.statut === 'RECUE_PARTIELLEMENT') {
+            <div class="border-t border-line bg-surface px-6 py-4">
+              <button type="button" class="btn btn-or w-full" [disabled]="actionEnCours() === d.id" (click)="receptionner(d)">
+                <app-icon name="check" [size]="15" />
+                {{ actionEnCours() === d.id ? 'Réception…' : 'Réceptionner le solde restant' }}
               </button>
             </div>
           }

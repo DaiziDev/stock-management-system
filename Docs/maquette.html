@@ -10,6 +10,8 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
 /* ================= DESIGN TOKENS v2 ================= */
+/* little modification to push */
+
 :root{
   --ink-950:#0A1E20; --ink-900:#0F2A2D; --ink-850:#132F32; --ink-800:#173A3E; --ink-700:#204C50; --ink-600:#2E6165;
   --gold-600:#A9761F; --gold-500:#C9922E; --gold-400:#DDAE55; --gold-100:#FBF0DC;
@@ -273,6 +275,7 @@ tbody tr.removing{animation:rowOut .28s var(--ease) forwards;}
 .badge-green{background:var(--success-bg);color:var(--success);}
 .badge-red{background:var(--danger-bg);color:var(--danger);}
 .badge-ink{background:rgba(23,58,62,.09);color:var(--ink-700);}
+.badge-info{background:var(--info-bg);color:var(--info);}
 .avatar-sm{width:27px;height:27px;border-radius:50%;background:var(--ink-800);color:#fff;display:inline-flex;
   align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-right:9px;flex-shrink:0;}
 
@@ -293,6 +296,7 @@ tbody tr.removing{animation:rowOut .28s var(--ease) forwards;}
 .modal-body{padding:22px 24px;}
 .modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--border);}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.modal-section-title{font-family:var(--font-d);font-weight:650;font-size:15px;margin:4px 0 12px;color:var(--ink-800);}
 
 /* ================= TOAST ================= */
 #toast-container{position:fixed;bottom:22px;right:22px;z-index:300;display:flex;flex-direction:column;gap:10px;max-width:calc(100vw - 44px);}
@@ -418,6 +422,7 @@ tbody tr.removing{animation:rowOut .28s var(--ease) forwards;}
         <div class="field-input-wrap"><i data-lucide="lock" class="i"></i><input id="login-pass" type="password" value="••••••••"></div>
       </div>
       <button class="btn btn-primary btn-block" id="login-btn"><span id="login-btn-label">Se connecter</span></button>
+      <button class="btn btn-ghost btn-block" id="login-plateforme-btn" style="margin-top:10px;">Se connecter comme opérateur plateforme</button>
       <p class="login-hint">Maquette de démonstration — aucune vraie authentification.</p>
     </div>
   </div>
@@ -433,7 +438,7 @@ tbody tr.removing{animation:rowOut .28s var(--ease) forwards;}
     <div class="sb-footer">
       <div class="sb-user">
         <div class="sb-avatar">RK</div>
-        <div class="sb-user-info"><b>Ravel K.</b><span>Administrateur</span></div>
+        <div class="sb-user-info"><b>Ravel K.</b><span id="sb-user-role">Administrateur</span></div>
         <button class="sb-logout" id="logout-btn" title="Déconnexion"><i data-lucide="log-out" class="i"></i></button>
       </div>
     </div>
@@ -476,11 +481,11 @@ const DB = {
     {id:3,nom:'Bafoussam Trading Co',ville:'Bafoussam',mail:'hello@bftrading.cm',numTel:'+237 6 55 44 33 21'},
   ],
   categories:[
-    {id:1,code:'BOIS',designation:'Boissons'},
-    {id:2,code:'HYG',designation:'Hygiène & entretien'},
-    {id:3,code:'ALIM',designation:'Alimentation générale'},
-    {id:4,code:'ELEC',designation:'Électronique'},
-    {id:5,code:'PAP',designation:'Papeterie'},
+    {id:1,code:'BOIS',designation:'Boissons',entrepriseId:1},
+    {id:2,code:'HYG',designation:'Hygiène & entretien',entrepriseId:1},
+    {id:3,code:'ALIM',designation:'Alimentation générale',entrepriseId:1},
+    {id:4,code:'ELEC',designation:'Électronique',entrepriseId:1},
+    {id:5,code:'PAP',designation:'Papeterie',entrepriseId:1},
   ],
   articles:[
     {id:1,codeArticle:'ART-0001',designation:'Eau minérale 1.5L (pack 6)',categorieId:1,prixHt:2200,tva:19.25,stock:340,seuil:80,entrepriseId:1},
@@ -491,45 +496,56 @@ const DB = {
     {id:6,codeArticle:'ART-0006',designation:'Jus d\'ananas 1L',categorieId:1,prixHt:1600,tva:19.25,stock:187,seuil:50,entrepriseId:1},
     {id:7,codeArticle:'ART-0007',designation:'Détergent poudre 1kg',categorieId:2,prixHt:2100,tva:19.25,stock:8,seuil:25,entrepriseId:1},
     {id:8,codeArticle:'ART-0008',designation:'Huile végétale 5L',categorieId:3,prixHt:9800,tva:19.25,stock:63,seuil:20,entrepriseId:1},
+    {id:9,codeArticle:'ART-0009',designation:'Thé vert 50 sachets',categorieId:1,prixHt:3100,tva:19.25,stock:142,seuil:40,entrepriseId:2},
+    {id:10,codeArticle:'ART-0010',designation:'Gel désinfectant 250ml',categorieId:2,prixHt:950,tva:19.25,stock:12,seuil:30,entrepriseId:2},
   ],
   clients:[
     {id:1,nom:'Mbarga',prenom:'Jean',mail:'j.mbarga@mail.cm',numTel:'699 11 22 33',ville:'Douala',entrepriseId:1},
     {id:2,nom:'Ateba',prenom:'Sophie',mail:'s.ateba@mail.cm',numTel:'677 44 55 66',ville:'Douala',entrepriseId:1},
     {id:3,nom:'Ngoue',prenom:'Paul',mail:'p.ngoue@mail.cm',numTel:'655 88 99 00',ville:'Edéa',entrepriseId:1},
     {id:4,nom:'Fokou',prenom:'Alice',mail:'a.fokou@mail.cm',numTel:'690 12 34 56',ville:'Douala',entrepriseId:1},
+    {id:5,nom:'Mvondo',prenom:'Clara',mail:'c.mvondo@mail.cm',numTel:'691 55 44 33',ville:'Yaoundé',entrepriseId:2},
   ],
   fournisseurs:[
-    {id:1,nom:'CamBoissons Import',mail:'ventes@camboissons.cm',numTel:'233 42 10 10',ville:'Douala'},
-    {id:2,nom:'Hygiène Plus SARL',mail:'contact@hygieneplus.cm',numTel:'233 40 22 18',ville:'Douala'},
-    {id:3,nom:'Grand Marché Riz',mail:'commande@gmriz.cm',numTel:'233 41 55 09',ville:'Douala'},
+    {id:1,nom:'CamBoissons Import',mail:'ventes@camboissons.cm',numTel:'233 42 10 10',ville:'Douala',entrepriseId:1},
+    {id:2,nom:'Hygiène Plus SARL',mail:'contact@hygieneplus.cm',numTel:'233 40 22 18',ville:'Douala',entrepriseId:1},
+    {id:3,nom:'Grand Marché Riz',mail:'commande@gmriz.cm',numTel:'233 41 55 09',ville:'Douala',entrepriseId:1},
   ],
   utilisateurs:[
     {id:1,nom:'Ravel Kamga',login:'ravel.k',role:'ADMIN',entrepriseId:1},
     {id:2,nom:'Chantal Biya',login:'chantal.b',role:'VENDEUR',entrepriseId:1},
     {id:3,nom:'Eric Tabi',login:'eric.t',role:'GESTIONNAIRE',entrepriseId:1},
+    {id:4,nom:'Marie Ngo',login:'marie.n',role:'ADMIN',entrepriseId:2},
+    {id:5,nom:'Paul Essomba',login:'paul.e',role:'VENDEUR',entrepriseId:2},
+    {id:6,nom:'Alice Fokou',login:'alice.f',role:'GESTIONNAIRE',entrepriseId:3},
   ],
   roles:[{id:1,nom:'ADMIN'},{id:2,nom:'VENDEUR'},{id:3,nom:'GESTIONNAIRE'}],
   commandesClient:[
-    {id:1,code:'CC-2026-014',clientId:1,date:'2026-07-24',statut:'VALIDEE',lignes:[{articleId:1,qte:10},{articleId:5,qte:20}]},
-    {id:2,code:'CC-2026-015',clientId:2,date:'2026-07-26',statut:'EN_COURS',lignes:[{articleId:6,qte:15}]},
-    {id:3,code:'CC-2026-016',clientId:4,date:'2026-07-27',statut:'EN_COURS',lignes:[{articleId:3,qte:2},{articleId:8,qte:4}]},
+    {id:1,code:'CC-2026-014',clientId:1,date:'2026-07-24',statut:'VALIDEE',entrepriseId:1,lignes:[{articleId:1,qte:10},{articleId:5,qte:20}]},
+    {id:2,code:'CC-2026-015',clientId:2,date:'2026-07-26',statut:'EN_COURS',entrepriseId:1,lignes:[{articleId:6,qte:15}]},
+    {id:3,code:'CC-2026-016',clientId:4,date:'2026-07-27',statut:'EN_COURS',entrepriseId:1,lignes:[{articleId:3,qte:2},{articleId:8,qte:4}]},
+    {id:4,code:'CC-2026-017',clientId:3,date:'2026-07-28',statut:'EXPEDIEE',entrepriseId:1,lignes:[{articleId:5,qte:8}]},
+    {id:5,code:'CC-2026-018',clientId:1,date:'2026-07-29',statut:'LIVREE',entrepriseId:1,lignes:[{articleId:2,qte:6}]},
   ],
   commandesFournisseur:[
-    {id:1,code:'CF-2026-008',fournisseurId:1,date:'2026-07-20',statut:'RECUE',lignes:[{articleId:1,qte:200},{articleId:6,qte:100}]},
-    {id:2,code:'CF-2026-009',fournisseurId:2,date:'2026-07-25',statut:'EN_ATTENTE',lignes:[{articleId:2,qte:150},{articleId:7,qte:100}]},
+    {id:1,code:'CF-2026-008',fournisseurId:1,date:'2026-07-20',statut:'RECUE',entrepriseId:1,lignes:[{articleId:1,qte:200},{articleId:6,qte:100}]},
+    {id:2,code:'CF-2026-009',fournisseurId:2,date:'2026-07-25',statut:'EN_ATTENTE',entrepriseId:1,lignes:[{articleId:2,qte:150},{articleId:7,qte:100}]},
+    {id:3,code:'CF-2026-010',fournisseurId:3,date:'2026-07-27',statut:'RECUE_PARTIELLEMENT',entrepriseId:1,lignes:[{articleId:3,qte:30}]},
   ],
   mouvementsStock:[
-    {id:1,articleId:1,type:'ENTREE',qte:200,date:'2026-07-20',origine:'CF-2026-008'},
-    {id:2,articleId:6,type:'ENTREE',qte:100,date:'2026-07-20',origine:'CF-2026-008'},
-    {id:3,articleId:1,type:'SORTIE',qte:10,date:'2026-07-24',origine:'CC-2026-014'},
-    {id:4,articleId:5,type:'SORTIE',qte:20,date:'2026-07-24',origine:'CC-2026-014'},
-    {id:5,articleId:4,type:'SORTIE',qte:9,date:'2026-07-26',origine:'VT-2026-051'},
+    {id:1,articleId:1,type:'ENTREE',qte:200,date:'2026-07-20',origine:'CF-2026-008',entrepriseId:1},
+    {id:2,articleId:6,type:'ENTREE',qte:100,date:'2026-07-20',origine:'CF-2026-008',entrepriseId:1},
+    {id:3,articleId:1,type:'SORTIE',qte:10,date:'2026-07-24',origine:'CC-2026-014',entrepriseId:1},
+    {id:4,articleId:5,type:'SORTIE',qte:20,date:'2026-07-24',origine:'CC-2026-014',entrepriseId:1},
+    {id:5,articleId:4,type:'SORTIE',qte:9,date:'2026-07-26',origine:'VT-2026-051',entrepriseId:1},
+    {id:6,articleId:9,type:'ENTREE',qte:60,date:'2026-07-27',origine:'CF-2026-011',entrepriseId:2},
   ],
   ventes:[
-    {id:1,code:'VT-2026-048',date:'2026-07-22',clientNom:'Client comptoir',lignes:[{articleId:1,qte:3},{articleId:5,qte:2}]},
-    {id:2,code:'VT-2026-049',date:'2026-07-23',clientNom:'Jean Mbarga',lignes:[{articleId:3,qte:1}]},
-    {id:3,code:'VT-2026-050',date:'2026-07-25',clientNom:'Client comptoir',lignes:[{articleId:6,qte:5},{articleId:8,qte:1}]},
-    {id:4,code:'VT-2026-051',date:'2026-07-26',clientNom:'Sophie Ateba',lignes:[{articleId:4,qte:9}]},
+    {id:1,code:'VT-2026-048',date:'2026-07-22',clientNom:'Client comptoir',entrepriseId:1,lignes:[{articleId:1,qte:3},{articleId:5,qte:2}]},
+    {id:2,code:'VT-2026-049',date:'2026-07-23',clientNom:'Jean Mbarga',entrepriseId:1,lignes:[{articleId:3,qte:1}]},
+    {id:3,code:'VT-2026-050',date:'2026-07-25',clientNom:'Client comptoir',entrepriseId:1,lignes:[{articleId:6,qte:5},{articleId:8,qte:1}]},
+    {id:4,code:'VT-2026-051',date:'2026-07-26',clientNom:'Sophie Ateba',entrepriseId:1,lignes:[{articleId:4,qte:9}]},
+    {id:5,code:'VT-2026-052',date:'2026-07-28',clientNom:'Clara Mvondo',entrepriseId:2,lignes:[{articleId:9,qte:2},{articleId:10,qte:4}]},
   ],
 };
 let idSeq = 9000;
@@ -538,9 +554,12 @@ const nextId = ()=> ++idSeq;
 /* =========================================================
    STATE
    ========================================================= */
-const state = { view:'dashboard', entrepriseId:1, cart:[] };
+const state = { view:'dashboard', espace:'entreprise', entrepriseId:1, cart:[] };
 
 const catName = id => DB.categories.find(c=>c.id===id)?.designation || '—';
+/* Scope tenant : comme CurrentUserService côté backend, chaque vue
+   d'entreprise ne montre que les données de l'entreprise sélectionnée. */
+const tenant = rows => rows.filter(r=>r.entrepriseId===state.entrepriseId);
 const artName = id => DB.articles.find(a=>a.id===id)?.designation || '—';
 const artByI = id => DB.articles.find(a=>a.id===id);
 const cliName = id => { const c=DB.clients.find(c=>c.id===id); return c? c.prenom+' '+c.nom : '—'; };
@@ -553,6 +572,10 @@ const initials = (a,b='') => (a[0]||'')+(b[0]||'');
    NAVIGATION
    ========================================================= */
 const NAV = [
+  {group:'Plateforme', espace:'plateforme', items:[
+    {key:'plateformeAccueil', label:"Vue d'ensemble", icon:'layout-dashboard'},
+    {key:'plateformeEntreprises', label:'Entreprises clientes', icon:'building-2'},
+  ]},
   {group:"Vue d'ensemble", items:[
     {key:'dashboard', label:'Tableau de bord', icon:'layout-dashboard'},
     {key:'stockReport', label:'Rapports & stock', icon:'bar-chart-3'},
@@ -562,7 +585,6 @@ const NAV = [
     {key:'articles', label:'Articles', icon:'package'},
   ]},
   {group:'Organisation', items:[
-    {key:'entreprises', label:'Entreprises', icon:'building-2'},
     {key:'utilisateurs', label:'Utilisateurs & rôles', icon:'users'},
   ]},
   {group:'Tiers', items:[
@@ -579,14 +601,28 @@ const NAV = [
 
 function renderSidebar(){
   const el = document.getElementById('sb-nav');
-  el.innerHTML = NAV.map(g=>`
+  // Deux espaces distincts comme dans l'app réelle : la console Plateforme
+  // (opérateur SUPER_ADMIN) et l'application d'entreprise (tenants).
+  const groupesVisibles = NAV.filter(g=> state.espace==='plateforme' ? g.espace==='plateforme' : !g.espace);
+  el.innerHTML = groupesVisibles.map(g=>`
     <div class="sb-group-label">${g.group}</div>
     ${g.items.map(it=>`
       <div class="sb-item ${state.view===it.key?'active':''}" data-view="${it.key}">
         ${icon(it.icon)}<span>${it.label}</span>
       </div>`).join('')}
-  `).join('');
-  el.querySelectorAll('.sb-item').forEach(n=>n.addEventListener('click',()=>{ go(n.dataset.view); closeMobileSidebar(); }));
+  `).join('')
+  + (state.espace==='plateforme' ? `
+    <div class="sb-group-label">Session</div>
+    <div class="sb-item" data-view="__retour-entreprise">
+      ${icon('arrow-left')}<span>Espace entreprise</span>
+    </div>` : '');
+  el.querySelectorAll('.sb-item').forEach(n=>n.addEventListener('click',()=>{
+    if(n.dataset.view==='__retour-entreprise'){ go('dashboard'); } else { go(n.dataset.view); }
+    closeMobileSidebar();
+  }));
+  // L'espace plateforme n'appartient à aucune entreprise : pas de sélecteur.
+  document.getElementById('entreprise-switcher').style.display = state.espace==='plateforme' ? 'none' : '';
+  document.getElementById('sb-user-role').textContent = state.espace==='plateforme' ? 'Opérateur plateforme' : 'Administrateur';
   refreshIcons();
 }
 function openMobileSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('sb-backdrop').classList.add('show'); }
@@ -594,6 +630,10 @@ function closeMobileSidebar(){ document.getElementById('sidebar').classList.remo
 
 function go(view){
   state.view = view; state._filter='';
+  // Bascule d'espace automatique (équivalent des superAdminGuard / tenantGuard
+  // de l'app réelle) : une vue Plateforme entre dans l'espace opérateur, une
+  // vue d'entreprise y ramène.
+  state.espace = (view==='plateformeAccueil'||view==='plateformeEntreprises') ? 'plateforme' : 'entreprise';
   renderSidebar();
   renderView();
   document.getElementById('main-content').scrollTo({top:0,behavior:'smooth'});
@@ -643,7 +683,7 @@ function fieldHtml(f, val=''){
    CRUD GÉNÉRIQUE
    ========================================================= */
 function crudView(cfg){
-  const rows = DB[cfg.dataKey];
+  const rows = tenant(DB[cfg.dataKey]);
   const filtered = state._filter ? rows.filter(r => cfg.searchable.some(k=>String(r[k]??'').toLowerCase().includes(state._filter))) : rows;
   return `
   <div class="page-head">
@@ -692,6 +732,7 @@ function openCrudModal(cfg, item=null){
       document.getElementById('m-cancel').onclick = closeModal;
       document.getElementById('m-save').onclick = ()=>{
         const obj = item? {...item} : {id:nextId(), entrepriseId: state.entrepriseId};
+        // (entrepriseId toujours marqué à la création : scope tenant de la maquette)
         for(const f of cfg.fields){
           const v = document.getElementById('f-'+f.name).value;
           if(f.required && !v.trim()){ toast(`Le champ "${f.label}" est obligatoire.`,'error'); return; }
@@ -717,10 +758,10 @@ function sparkline(points, color){
 }
 
 function viewDashboard(){
-  const totalStockValue = DB.articles.reduce((s,a)=>s+a.stock*ttc(a),0);
-  const lowStock = DB.articles.filter(a=>a.stock<=a.seuil);
-  const salesToday = DB.ventes.length;
-  const clientsActifs = DB.clients.length;
+  const totalStockValue = tenant(DB.articles).reduce((s,a)=>s+a.stock*ttc(a),0);
+  const lowStock = tenant(DB.articles).filter(a=>a.stock<=a.seuil);
+  const salesToday = tenant(DB.ventes).length;
+  const clientsActifs = tenant(DB.clients).length;
   return `
   <div class="page-head">
     <div><span class="eyebrow">Vue d'ensemble</span><h1>Tableau de bord</h1><p>Aperçu en temps réel de l'activité de ${DB.entreprises.find(e=>e.id===state.entrepriseId).nom}.</p></div>
@@ -787,13 +828,19 @@ function viewDashboard(){
   </div>`;
 }
 
-function mountDashboard(){
+function animateKpis(){
   document.querySelectorAll('.kpi-value[data-count]').forEach(el=>{
     const target = parseInt(el.dataset.count,10);
     let cur = 0; const step = Math.max(1, Math.round(target/40));
     const t = setInterval(()=>{ cur += step; if(cur>=target){cur=target; clearInterval(t);} el.textContent = cur.toLocaleString('fr-FR'); }, 16);
   });
+}
+
+function mountDashboard(){
+  animateKpis();
   document.querySelectorAll('[data-go]').forEach(n=>n.addEventListener('click',()=>go(n.dataset.go)));
+  const articlesTenant = tenant(DB.articles);
+  const categoriesTenant = tenant(DB.categories);
   Chart.defaults.font.family = "'Inter',sans-serif"; Chart.defaults.font.size = 11.5;
   new Chart(document.getElementById('chart-ventes'), {
     type:'line',
@@ -805,8 +852,8 @@ function mountDashboard(){
   });
   new Chart(document.getElementById('chart-cat'), {
     type:'bar',
-    data:{ labels: DB.categories.map(c=>c.designation),
-      datasets:[{ data: DB.categories.map(c=> DB.articles.filter(a=>a.categorieId===c.id).reduce((s,a)=>s+a.stock*ttc(a),0)),
+    data:{ labels: categoriesTenant.map(c=>c.designation),
+      datasets:[{ data: categoriesTenant.map(c=> articlesTenant.filter(a=>a.categorieId===c.id).reduce((s,a)=>s+a.stock*ttc(a),0)),
         backgroundColor:'#173A3E', borderRadius:7, maxBarThickness:32 }] },
     options:{ plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}}, y:{grid:{color:'#F1F2F4'}} },
       animation:{duration:900, easing:'easeOutQuart'} }
@@ -817,7 +864,7 @@ function mountDashboard(){
    RAPPORTS & STOCK
    ========================================================= */
 function viewStockReport(){
-  const sorted = [...DB.articles].sort((a,b)=> (a.stock-a.seuil) - (b.stock-b.seuil));
+  const sorted = tenant(DB.articles).sort((a,b)=> (a.stock-a.seuil) - (b.stock-b.seuil));
   return `
   <div class="page-head"><div><span class="eyebrow">Analyse</span><h1>Rapports & niveaux de stock</h1>
     <p>Vue détaillée pour anticiper les ruptures.</p></div></div>
@@ -833,10 +880,10 @@ function viewStockReport(){
 function mountStockReport(){
   new Chart(document.getElementById('chart-seuils'), {
     type:'bar',
-    data:{ labels: DB.articles.map(a=>a.codeArticle),
+    data:{ labels: tenant(DB.articles).map(a=>a.codeArticle),
       datasets:[
-        {label:'Stock actuel', data: DB.articles.map(a=>a.stock), backgroundColor:'#173A3E', borderRadius:6},
-        {label:'Seuil', data: DB.articles.map(a=>a.seuil), backgroundColor:'#C9922E', borderRadius:6},
+        {label:'Stock actuel', data: tenant(DB.articles).map(a=>a.stock), backgroundColor:'#173A3E', borderRadius:6},
+        {label:'Seuil', data: tenant(DB.articles).map(a=>a.seuil), backgroundColor:'#C9922E', borderRadius:6},
       ]},
     options:{ scales:{ x:{grid:{display:false}}, y:{grid:{color:'#F1F2F4'}} }, animation:{duration:900} }
   });
@@ -849,7 +896,7 @@ function commandeLineTotal(lignes){ return lignes.reduce((s,l)=> s + l.qte*ttc(a
 
 function viewCommandes(type){
   const isClient = type==='client';
-  const rows = isClient? DB.commandesClient : DB.commandesFournisseur;
+  const rows = tenant(isClient? DB.commandesClient : DB.commandesFournisseur);
   const tiersName = isClient? cliName : fourName;
   const tiersKey = isClient? 'clientId':'fournisseurId';
   return `
@@ -868,7 +915,7 @@ function viewCommandes(type){
     </tr>`).join('')}</tbody></table></div></div>`;
 }
 function statutBadge(s){
-  const map = {VALIDEE:['green','check','Validée'],EN_COURS:['gold','clock','En cours'],RECUE:['green','check','Reçue'],EN_ATTENTE:['gold','clock','En attente'],ANNULEE:['red','x','Annulée']};
+  const map = {VALIDEE:['green','check','Validée'],EN_COURS:['gold','clock','En cours'],EXPEDIEE:['info','truck','Expédiée'],LIVREE:['green','check-circle-2','Livrée'],RECUE:['green','check','Reçue'],RECUE_PARTIELLEMENT:['gold','clock','Reçue partiellement'],EN_ATTENTE:['gold','clock','En attente'],ANNULEE:['red','x','Annulée']};
   const [c,ic,l] = map[s]||['ink','circle',s];
   return `<span class="badge badge-${c}">${icon(ic)}${l}</span>`;
 }
@@ -892,11 +939,12 @@ function bindCommandes(type){
 
 function openNewCommandeModal(type){
   const isClient = type==='client';
-  const tiersOptions = (isClient?DB.clients:DB.fournisseurs).map(t=>({value:t.id, label: isClient? t.prenom+' '+t.nom : t.nom}));
-  let lines = [{articleId:DB.articles[0].id, qte:1}];
+  const articlesTenant = tenant(DB.articles);
+  const tiersOptions = tenant(isClient?DB.clients:DB.fournisseurs).map(t=>({value:t.id, label: isClient? t.prenom+' '+t.nom : t.nom}));
+  let lines = [{articleId:articlesTenant[0].id, qte:1}];
   const renderLines = () => lines.map((l,i)=>`
     <div class="line-item" data-i="${i}">
-      <select class="li-art">${DB.articles.map(a=>`<option value="${a.id}" ${a.id===l.articleId?'selected':''}>${a.designation}</option>`).join('')}</select>
+      <select class="li-art">${articlesTenant.map(a=>`<option value="${a.id}" ${a.id===l.articleId?'selected':''}>${a.designation}</option>`).join('')}</select>
       <input class="li-qte" type="number" min="1" value="${l.qte}">
       <span class="mono li-total">${money(l.qte*ttc(artByI(l.articleId)))}</span>
       <button class="icon-btn danger li-del">${icon('x')}</button>
@@ -923,14 +971,15 @@ function openNewCommandeModal(type){
       document.querySelectorAll('.li-del').forEach((s,i)=>s.onclick=()=>{ if(lines.length>1){lines.splice(i,1);refresh();} else toast('Il faut au moins une ligne.','error'); });
     };
     bindLineEvents();
-    document.getElementById('add-line').onclick = ()=>{ lines.push({articleId:DB.articles[0].id, qte:1}); refresh(); };
+    document.getElementById('add-line').onclick = ()=>{ lines.push({articleId:articlesTenant[0].id, qte:1}); refresh(); };
     document.getElementById('m-cancel').onclick = closeModal;
     document.getElementById('m-save').onclick = ()=>{
       const tiersId = parseInt(document.getElementById('f-tiers').value);
       const code = (isClient?'CC-2026-0':'CF-2026-0') + (Math.floor(Math.random()*90)+10);
-      const obj = { id:nextId(), code, date:new Date().toISOString().slice(0,10), statut: isClient?'EN_COURS':'EN_ATTENTE', lignes:[...lines] };
+      const obj = { id:nextId(), code, date:new Date().toISOString().slice(0,10), statut: isClient?'EN_COURS':'EN_ATTENTE', entrepriseId:state.entrepriseId, lignes:[...lines] };
       obj[isClient?'clientId':'fournisseurId'] = tiersId;
       (isClient?DB.commandesClient:DB.commandesFournisseur).push(obj);
+      // NB : création limitée au tenant courant, comme le backend.
       closeModal(); renderView(); toast(`Commande ${code} créée.`);
     };
   }});
@@ -940,7 +989,7 @@ function openNewCommandeModal(type){
    MOUVEMENTS DE STOCK
    ========================================================= */
 function viewMouvements(){
-  const rows = [...DB.mouvementsStock].reverse();
+  const rows = tenant([...DB.mouvementsStock]).reverse();
   return `
   <div class="page-head"><div><span class="eyebrow">Traçabilité</span><h1>Mouvements de stock</h1>
     <p>Historique des entrées (réceptions fournisseur) et sorties (ventes).</p></div></div>
@@ -960,7 +1009,7 @@ function viewVentes(){
   <div class="page-head"><div><span class="eyebrow">Transactions</span><h1>Point de vente</h1>
     <p>Sélectionne des articles pour composer une vente. Le stock est décrémenté à l'encaissement.</p></div></div>
   <div class="pos-layout">
-    <div class="pos-grid">${DB.articles.map((a,i)=>`
+    <div class="pos-grid">${tenant(DB.articles).map((a,i)=>`
       <div class="pos-item ${a.stock<=0?'disabled':''}" data-id="${a.id}" style="animation-delay:${i*25}ms">
         <div class="pi-icon">${a.designation[0]}</div>
         <b>${a.designation}</b>
@@ -1016,9 +1065,9 @@ function bindVentes(){
     }
     for(const c of state.cart){
       const a = artByI(c.articleId); a.stock -= c.qte;
-      DB.mouvementsStock.push({id:nextId(), articleId:c.articleId, type:'SORTIE', qte:c.qte, date:new Date().toISOString().slice(0,10), origine:'VT-2026-NEW'});
+      DB.mouvementsStock.push({id:nextId(), articleId:c.articleId, type:'SORTIE', qte:c.qte, date:new Date().toISOString().slice(0,10), origine:'VT-2026-NEW', entrepriseId:state.entrepriseId});
     }
-    DB.ventes.push({id:nextId(), code:'VT-2026-0'+(Math.floor(Math.random()*90)+10), date:new Date().toISOString().slice(0,10), clientNom:'Client comptoir', lignes:[...state.cart]});
+    DB.ventes.push({id:nextId(), code:'VT-2026-0'+(Math.floor(Math.random()*90)+10), date:new Date().toISOString().slice(0,10), clientNom:'Client comptoir', entrepriseId:state.entrepriseId, lignes:[...state.cart]});
     toast('Vente encaissée avec succès.');
     state.cart = [];
     renderView();
@@ -1029,7 +1078,7 @@ function bindVentes(){
    ARTICLES
    ========================================================= */
 function viewArticles(){
-  const rows = DB.articles;
+  const rows = tenant(DB.articles);
   const filtered = state._filter ? rows.filter(r=>r.designation.toLowerCase().includes(state._filter)||r.codeArticle.toLowerCase().includes(state._filter)) : rows;
   return `
   <div class="page-head"><div><span class="eyebrow">Catalogue</span><h1>Articles</h1><p>Catalogue produit avec prix et niveau de stock.</p></div>
@@ -1049,7 +1098,7 @@ function bindCrudArticles(){
     fields:[
       {name:'codeArticle',label:'Code article',required:true},
       {name:'designation',label:'Désignation',required:true},
-      {name:'categorieId',label:'Catégorie',type:'select',options:DB.categories.map(c=>({value:c.id,label:c.designation}))},
+      {name:'categorieId',label:'Catégorie',type:'select',options:tenant(DB.categories).map(c=>({value:c.id,label:c.designation}))},
       {name:'prixHt',label:'Prix unitaire HT (FCFA)',type:'number',required:true},
       {name:'tva',label:'Taux TVA (%)',type:'number',default:19.25},
       {name:'stock',label:'Stock initial',type:'number',default:0},
@@ -1062,6 +1111,174 @@ function bindCrudArticles(){
     const tr=b.closest('tr'); tr.classList.add('removing');
     setTimeout(()=>{ DB.articles = DB.articles.filter(a=>a.id!=b.dataset.id); renderView(); toast('Article supprimé.','info'); },280);
   });
+}
+
+/* =========================================================
+   PLATEFORME — vue d'ensemble du parc
+   ========================================================= */
+function viewPlateformeAccueil(){
+  const nbUtilisateurs = DB.utilisateurs.length;
+  // Vue Plateforme = toutes entreprises confondues (pas de scope tenant).
+  const nbAdmins = DB.utilisateurs.filter(u=>u.role==='ADMIN').length;
+  const nbClients = DB.clients.length;
+  const nbArticles = DB.articles.length;
+  const nbAlertes = DB.articles.filter(a=>a.stock<=a.seuil).length;
+  const nbVentes = DB.ventes.length;
+  const nbVentesMois = DB.ventes.filter(v=>v.date>='2026-07-01').length;
+  const caMois = DB.ventes.filter(v=>v.date>='2026-07-01')
+    .reduce((s,v)=>s+v.lignes.reduce((t,l)=>t+l.qte*ttc(artByI(l.articleId)),0),0);
+  const nbCommandesEnCours = DB.commandesClient.filter(c=>c.statut==='EN_COURS').length;
+  const dernieres = [...DB.entreprises].slice(-4).reverse();
+  const comptesDe = id => DB.utilisateurs.filter(u=>u.entrepriseId===id).length;
+  return `
+  <div class="page-head">
+    <div><span class="eyebrow">Plateforme</span><h1>Vue d'ensemble</h1>
+      <p>État du parc : entreprises clientes hébergées, comptes actifs et activité générée, toutes sociétés confondues.</p></div>
+    <button class="btn btn-primary" data-go="plateformeEntreprises">${icon('building-2')} Gérer les entreprises</button>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-top"><div class="kpi-icon" style="background:var(--gold-100);color:var(--gold-600)">${icon('building-2')}</div>
+        <span class="badge badge-green">+${DB.entreprises.length} ce mois</span></div>
+      <div class="kpi-value" data-count="${DB.entreprises.length}">0</div>
+      <div class="kpi-label">Entreprises clientes</div>
+      ${sparkline([8,9,9,10,11,12,DB.entreprises.length],'#C9922E')}
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><div class="kpi-icon" style="background:var(--info-bg);color:var(--info)">${icon('users')}</div></div>
+      <div class="kpi-value" data-count="${nbUtilisateurs}">0</div>
+      <div class="kpi-label">Comptes utilisateurs (dont ${nbAdmins} admins)</div>
+      ${sparkline([10,12,13,14,16,17,nbUtilisateurs],'#2D6FE0')}
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><div class="kpi-icon" style="background:var(--success-bg);color:var(--success)">${icon('user')}</div></div>
+      <div class="kpi-value" data-count="${nbClients}">0</div>
+      <div class="kpi-label">Clients finaux</div>
+      ${sparkline([2,2,3,3,4,4,nbClients],'#1E9A55')}
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><div class="kpi-icon" style="background:var(--surface-alt);color:var(--text-700)">${icon('package')}</div>
+        <span class="badge ${nbAlertes>0?'badge-red':'badge-green'}">${nbAlertes} en alerte</span></div>
+      <div class="kpi-value" data-count="${nbArticles}">0</div>
+      <div class="kpi-label">Articles gérés</div>
+      ${sparkline([6,7,7,8,9,10,nbArticles],'#33403F')}
+    </div>
+  </div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-top:18px;">
+    <div class="card" style="padding:19px;display:flex;align-items:center;gap:15px;">
+      <div class="kpi-icon" style="background:var(--gold-100);color:var(--gold-600)">${icon('shopping-cart')}</div>
+      <div><div class="kpi-value mono" style="font-size:22px;">${money(caMois)}</div>
+        <div class="kpi-label">CA du mois, toutes entreprises</div></div>
+    </div>
+    <div class="card" style="padding:19px;display:flex;align-items:center;gap:15px;">
+      <div class="kpi-icon" style="background:var(--info-bg);color:var(--info)">${icon('trending-up')}</div>
+      <div><div class="kpi-value mono" style="font-size:22px;">${nbVentesMois}</div>
+        <div class="kpi-label">Ventes depuis le 1er du mois (${nbVentes} au total)</div></div>
+    </div>
+    <div class="card" style="padding:19px;display:flex;align-items:center;gap:15px;">
+      <div class="kpi-icon" style="background:var(--surface-alt);color:var(--text-700)">${icon('clipboard-list')}</div>
+      <div><div class="kpi-value mono" style="font-size:22px;">${nbCommandesEnCours}</div>
+        <div class="kpi-label">Commandes clients en cours</div></div>
+    </div>
+  </div>
+  <div class="dash-grid" style="grid-template-columns:3fr 2fr;margin-top:18px;">
+    <div class="card">
+      <div class="card-head"><h3>Récemment onboardées</h3><span class="link" data-go="plateformeEntreprises">Tout voir ${icon('arrow-right')}</span></div>
+      ${dernieres.length? dernieres.map(e=>`
+        <div class="activity-row">
+          <div class="act-icon" style="background:var(--ink-800);color:#fff">${e.nom[0]}</div>
+          <div style="flex:1;min-width:0;"><b>${e.nom}</b><span>${e.ville||e.mail||'—'}</span></div>
+          <span class="badge badge-ink">${comptesDe(e.id)} compte(s)</span>
+        </div>`).join('') : `<p style="color:var(--text-400);font-size:13px;">Aucune entreprise onboardée pour l'instant.</p>`}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Santé du parc</h3></div>
+      <p style="font-size:13px;color:var(--text-600);line-height:1.6;margin-bottom:14px;">
+        Depuis la console, vous onboardz les entreprises clientes : fiche + premier compte Administrateur,
+        avec un espace totalement isolé (catalogue, stock, ventes) pour chacune.</p>
+      <div class="alert-row">${icon('building-2')}<div class="ar-info"><b>Entreprises actives ce mois</b></div><span class="av" style="color:var(--success)">+${DB.entreprises.length}</span></div>
+      <div class="alert-row">${icon('alert-triangle')}<div class="ar-info"><b>Articles sous le seuil d'alerte</b></div><span class="av" style="color:${nbAlertes>0?'var(--danger)':'var(--success)'}">${nbAlertes}</span></div>
+      <div class="alert-row">${icon('users')}<div class="ar-info"><b>Ratio comptes / entreprise</b></div><span class="av">${DB.entreprises.length?(nbUtilisateurs/DB.entreprises.length).toFixed(1):'—'}</span></div>
+    </div>
+  </div>`;
+}
+function mountPlateformeAccueil(){
+  animateKpis();
+  document.querySelectorAll('[data-go]').forEach(n=>n.addEventListener('click',()=>go(n.dataset.go)));
+}
+
+/* =========================================================
+   PLATEFORME — entreprises clientes + onboarding
+   ========================================================= */
+function viewPlateformeEntreprises(){
+  const q = state._filter||'';
+  const rows = DB.entreprises.filter(e=>e.nom.toLowerCase().includes(q)||String(e.ville||'').toLowerCase().includes(q));
+  const comptesDe = id => DB.utilisateurs.filter(u=>u.entrepriseId===id).length;
+  const formOuvert = state._onboarder===true;
+  const f = (name,label,ph='',type='text') => `<div class="field"><label>${label}</label>
+    <input id="f-${name}" type="${type}" placeholder="${ph}"></div>`;
+  return `
+  <div class="page-head">
+    <div><span class="eyebrow">Plateforme</span><h1>Entreprises clientes</h1>
+      <p>Les sociétés hébergées sur la plateforme. Chacune reçoit un espace isolé : ses utilisateurs ne voient que ses données.</p></div>
+    <button class="btn btn-gold" id="btn-onboarder">${icon('plus')} ${formOuvert?'Fermer le formulaire':'Onboarder une entreprise'}</button>
+  </div>
+  ${formOuvert? `
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3>${icon('building-2')} Étape 1 — L'entreprise</h3></div>
+    <div class="field-row">
+      ${f('nomEntreprise','Nom de l\'entreprise *','Ex. : DOVV Essos')}
+      ${f('villeEntreprise','Ville','Ex. : Douala')}
+      ${f('mailEntreprise','Email de l\'entreprise','contact@entreprise.com','email')}
+      ${f('numTelEntreprise','Téléphone','+237 …')}
+    </div>
+    <h3 class="modal-section-title" style="margin-top:18px;">${icon('user-plus')} Étape 2 — Le compte Administrateur</h3>
+    <div class="field-row">
+      ${f('adminPrenom','Prénom de l\'admin *')}
+      ${f('adminNom','Nom de l\'admin *')}
+      ${f('adminLogin','Identifiant de connexion *','ex. : patron@dovv-essos.com')}
+      ${f('adminMotDePasse','Mot de passe *','','password')}
+    </div>
+    <div class="modal-foot" style="border:none;padding:16px 0 0;">
+      <button class="btn btn-ghost" id="btn-onboarder-cancel">Annuler</button>
+      <button class="btn btn-primary" id="btn-onboarder-save">Créer l'entreprise et son admin</button>
+    </div>
+  </div>`:''}
+  <div class="table-toolbar"><div class="table-search">${icon('search')}
+    <input id="tbl-search" placeholder="Rechercher..." value="${q}"></div>
+    <span style="font-size:12px;color:var(--text-400);">${rows.length} entreprise(s)</span></div>
+  <div class="table-wrap"><div class="table-scroll">
+    ${rows.length? `<table><thead><tr><th>Entreprise</th><th>Ville</th><th>Email</th><th>Téléphone</th><th>Comptes</th><th></th></tr></thead>
+      <tbody>${rows.map((e,i)=>`<tr style="animation-delay:${i*30}ms">
+        <td><span class="avatar-sm">${e.nom[0]}</span><b>${e.nom}</b></td>
+        <td>${e.ville||'—'}</td><td>${e.mail||'—'}</td><td class="mono">${e.numTel||'—'}</td>
+        <td><span class="badge badge-ink">${comptesDe(e.id)}</span></td>
+        <td><div class="row-actions"><button class="icon-btn edit-ent" data-id="${e.id}" title="Modifier les coordonnées">${icon('pencil')}</button></div></td>
+      </tr>`).join('')}</tbody></table>`
+    : `<div class="empty-state">${icon('building-2')}<b>Aucune entreprise</b><span>Ajustez votre recherche ou onboarder votre première entreprise cliente.</span></div>`}
+  </div></div>`;
+}
+function bindPlateformeEntreprises(){
+  document.getElementById('tbl-search')?.addEventListener('input', e=>{ state._filter = e.target.value.toLowerCase(); renderView(); });
+  document.getElementById('btn-onboarder')?.addEventListener('click', ()=>{ state._onboarder = !state._onboarder; renderView(); });
+  document.getElementById('btn-onboarder-cancel')?.addEventListener('click', ()=>{ state._onboarder=false; renderView(); });
+  document.getElementById('btn-onboarder-save')?.addEventListener('click', ()=>{
+    const v = id => document.getElementById('f-'+id).value.trim();
+    for(const [id,label] of [['nomEntreprise','Nom de l\'entreprise'],['adminPrenom','Prénom de l\'admin'],['adminNom','Nom de l\'admin'],['adminLogin','Identifiant'],['adminMotDePasse','Mot de passe']]){
+      if(!v(id)){ toast(`Le champ "${label}" est obligatoire.`,'error'); return; }
+    }
+    const ent = { id:nextId(), nom:v('nomEntreprise'), ville:v('villeEntreprise'), mail:v('mailEntreprise'), numTel:v('numTelEntreprise') };
+    DB.entreprises.push(ent);
+    DB.utilisateurs.push({ id:nextId(), nom:v('adminPrenom')+' '+v('adminNom'), login:v('adminLogin'), role:'ADMIN', entrepriseId:ent.id });
+    state._onboarder=false;
+    renderView(); toast(`Entreprise "${ent.nom}" onboardée avec son admin.`);
+  });
+  document.querySelectorAll('.edit-ent').forEach(b=>b.addEventListener('click', ()=>{
+    const e = DB.entreprises.find(x=>x.id==b.dataset.id);
+    const cfg = { singular:'Entreprise', fem:true,
+      fields:[{name:'nom',label:'Nom',required:true},{name:'ville',label:'Ville'},{name:'mail',label:'Email'},{name:'numTel',label:'Téléphone'}] };
+    openCrudModal(cfg, e);
+  }));
 }
 
 /* =========================================================
@@ -1096,6 +1313,8 @@ function renderView(){
   const main = document.getElementById('main-content');
   let html = '', mount = null;
   switch(state.view){
+    case 'plateformeAccueil': html = viewPlateformeAccueil(); mount = mountPlateformeAccueil; break;
+    case 'plateformeEntreprises': html = viewPlateformeEntreprises(); mount = bindPlateformeEntreprises; break;
     case 'dashboard': html = viewDashboard(); mount = mountDashboard; break;
     case 'stockReport': html = viewStockReport(); mount = mountStockReport; break;
     case 'articles': html = viewArticles(); mount = ()=>bindCrudArticles(); break;
@@ -1136,6 +1355,19 @@ document.getElementById('login-btn').addEventListener('click', ()=>{
   const label = document.getElementById('login-btn-label');
   label.innerHTML = `<span class="spinner"></span>`;
   setTimeout(()=>{
+    state.espace='entreprise'; state.view='dashboard'; state.entrepriseId=1;
+    document.getElementById('login-screen').classList.add('hide');
+    document.getElementById('app-shell').classList.add('show');
+    document.getElementById('entreprise-label').textContent = DB.entreprises.find(e=>e.id===state.entrepriseId).nom;
+    renderSidebar(); renderEntrepriseMenu(); renderView();
+  }, 700);
+});
+// Raccourci démo : ouvre directement la console Plateforme (SUPER_ADMIN).
+document.getElementById('login-plateforme-btn').addEventListener('click', ()=>{
+  const label = document.getElementById('login-btn-label');
+  label.innerHTML = `<span class="spinner"></span>`;
+  setTimeout(()=>{
+    state.espace='plateforme'; state.view='plateformeAccueil'; state.entrepriseId=1;
     document.getElementById('login-screen').classList.add('hide');
     document.getElementById('app-shell').classList.add('show');
     renderSidebar(); renderEntrepriseMenu(); renderView();
@@ -1145,6 +1377,7 @@ document.getElementById('logout-btn').addEventListener('click', ()=>{
   document.getElementById('app-shell').classList.remove('show');
   document.getElementById('login-screen').classList.remove('hide');
   document.getElementById('login-btn-label').textContent = 'Se connecter';
+  state.espace='entreprise'; state.view='dashboard'; state.entrepriseId=1; state.cart=[]; state._filter=''; state._onboarder=false;
 });
 document.getElementById('entreprise-switcher').addEventListener('click', ()=>{
   document.getElementById('entreprise-switcher').classList.toggle('open');

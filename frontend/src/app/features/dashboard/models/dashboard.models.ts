@@ -25,3 +25,26 @@ export interface VenteListe {
   clientNom: string | null;
   total: string;
 }
+
+/** Un jour de la série entrées / sorties de stock (GET /api/dashboard/graphiques). */
+export interface EntreeSortieJour {
+  date: string; // ISO : "2026-09-19"
+  entrees: number;
+  sorties: number;
+}
+
+/** Un article du classement des meilleures ventes (GET /api/dashboard/graphiques). */
+export interface TopArticle {
+  articleId: number;
+  designation: string;
+  codeArticle: string;
+  quantiteVendue: number;
+  /** BigDecimal → string en JSON. */
+  chiffreAffaires: string;
+}
+
+/** Réponse complète de GET /api/dashboard/graphiques. */
+export interface GraphiquesResponse {
+  evolutionStock: EntreeSortieJour[];
+  topArticles: TopArticle[];
+}

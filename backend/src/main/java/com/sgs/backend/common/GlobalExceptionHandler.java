@@ -1,5 +1,6 @@
 package com.sgs.backend.common;
 
+import com.sgs.backend.auth.RefreshTokenInvalidException;
 import com.sgs.backend.mvtStk.StockInsuffisantException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -44,6 +45,21 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNAUTHORIZED.value(),
                 "Unauthorized",
                 "Identifiant ou mot de passe incorrect",
+                req.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // Refresh token inconnu, expiré ou rejoué -> 401 : le frontend doit
+    // rediriger vers /login (pas retenter). 401 et non 403 : l'identité
+    // n'a pas pu être rétablie, c'est le même sens qu'un access token expiré.
+    @ExceptionHandler(RefreshTokenInvalidException.class)
+    public ResponseEntity<ApiError> handleRefreshTokenInvalid(RefreshTokenInvalidException ex, HttpServletRequest req) {
+        ApiError error = new ApiError(
+                Instant.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                ex.getMessage(),
                 req.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);

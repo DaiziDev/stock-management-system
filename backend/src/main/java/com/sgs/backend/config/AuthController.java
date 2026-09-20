@@ -1,5 +1,8 @@
 package com.sgs.backend.config;
 
+import com.sgs.backend.auth.AuthTokensDTO;
+import com.sgs.backend.auth.AuthTokensRequest;
+import com.sgs.backend.auth.RefreshTokenService;
 import com.sgs.backend.common.ResourceNotFoundException;
 import com.sgs.backend.config.dto.CurrentUserResponse;
 import com.sgs.backend.config.dto.LoginRequest;
@@ -33,13 +36,16 @@ import org.springframework.web.bind.annotation.*;
  * Ce controller est le SEUL endpoint public (hors Swagger).
  * Tous les autres endpoints de l'API nécessitent un JWT valide.
  *
- * Flow de connexion :
+ * Flow de connexion (§6.3 du cahier des charges : couple access + refresh) :
  *   1. Frontend envoie POST /api/auth/login { login, motDePasse }
  *   2. Spring Security vérifie le mot de passe via AuthenticationManager
- *   3. Si OK → on génère un JWT avec email, rôle, entrepriseId
- *   4. On retourne le token + les infos utilisateur
- *   5. Frontend stocke le token dans localStorage
- *   6. À chaque requête future → header Authorization: Bearer <token>
+ *   3. Si OK → on génère un JWT (24h) + un refresh token opaque (7 jours)
+ *   4. On retourne le couple de tokens + les infos utilisateur
+ *   5. Frontend stocke les deux tokens dans localStorage
+ *   6. À chaque requête future → header Authorization: Bearer <access>
+ *   7. JWT expiré → POST /api/auth/refresh { refreshToken } renvoie un
+ *      NOUVEAU couple (rotation) sans redemander les identifiants
+ *   8. Déconnexion → POST /api/auth/logout révoque le refresh token
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -52,6 +58,7 @@ public class AuthController {
     private final UtilisateurService utilisateurService;
     private final UserDetailsService userDetailsService;
     private final EntrepriseRepository entrepriseRepository;
+    private final RefreshTokenService refreshTokenService;
 
     /**
      * POST /api/auth/login
@@ -74,7 +81,7 @@ public class AuthController {
                     @ApiResponse(responseCode = "403", description = "❌ Identifiants incorrects")
             }
     )
-    public ResponseEntity<LoginResponse> login(
+    public ResponseEntity<AuthTokensDTO> login(
             @Parameter(description = "Identifiants de connexion", required = true)
             @Valid @RequestBody LoginRequest request
     ) {
@@ -109,7 +116,84 @@ public class AuthController {
                 utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getNom() : null
         );
 
-        return ResponseEntity.ok(new LoginResponse(token, userInfo));
+        String refreshToken = refreshTokenService.emettrePour(utilisateur);
+        return ResponseEntity.ok(new AuthTokensDTO(token, refreshToken, userInfo));
+    }
+
+    /**
+     * POST /api/auth/refresh
+     *
+     * Échange un refresh token valide contre un NOUVEAU couple
+     * access/refresh (rotation : l'ancien refresh token est consommé).
+     * C'est ce qui permet de prolonger la session sans redemander les
+     * identifiants quand le JWT de 24h expire.
+     *
+     * Public (pas de JWT, forcément : il est expiré quand on appelle).
+     * Refresh token inconnu/expiré/rejoué -> 401 (RefreshTokenInvalidException).
+     */
+    @PostMapping("/refresh")
+    @Operation(
+            summary = "🔄 Renouveler la session",
+            description = "Échange un refresh token valide contre un nouveau couple JWT + refresh token " +
+                    "(rotation : l'ancien refresh token devient inutilisable).",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "✅ Nouveau couple de tokens retourné"),
+                    @ApiResponse(responseCode = "401", description = "❌ Refresh token inconnu, expiré ou déjà utilisé")
+            }
+    )
+    public ResponseEntity<AuthTokensDTO> refresh(
+            @Parameter(description = "Refresh token reçu au login", required = true)
+            @Valid @RequestBody AuthTokensRequest request
+    ) {
+        RefreshTokenService.AuthTokens renouvellement = refreshTokenService.renouveler(request.refreshToken());
+        Utilisateur utilisateur = renouvellement.utilisateur();
+
+        String nouveauJwt = jwtUtil.generateToken(
+                utilisateur.getLogin(),
+                utilisateur.getRole().name(),
+                utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getId() : null
+        );
+
+        return ResponseEntity.ok(new AuthTokensDTO(
+                nouveauJwt,
+                renouvellement.refreshClair(),
+                new LoginResponse.UserInfo(
+                        utilisateur.getId(),
+                        utilisateur.getNom(),
+                        utilisateur.getPrenom(),
+                        utilisateur.getLogin(),
+                        utilisateur.getRole(),
+                        utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getId() : null,
+                        utilisateur.getEntreprise() != null ? utilisateur.getEntreprise().getNom() : null
+                )
+        ));
+    }
+
+    /**
+     * POST /api/auth/logout
+     *
+     * Révoque le refresh token reçu : la session ne peut plus être
+     * prolongée, l'utilisateur sera reconnecté au plus tard à
+     * l'expiration du JWT courant (24h max, en pratique sa prochaine
+     * requête après fermeture n'a plus de sens métier de toute façon).
+     *
+     * Idempotent : un token déjà révoqué/inconnu répond 204 quand même
+     * (le but est que la session meure, elle est déjà morte).
+     */
+    @PostMapping("/logout")
+    @Operation(
+            summary = "🚪 Déconnexion",
+            description = "Révoque le refresh token fourni. Idempotent.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "✅ Refresh token révoqué (ou déjà inconnu)")
+            }
+    )
+    public ResponseEntity<Void> logout(
+            @Parameter(description = "Refresh token à révoquer", required = true)
+            @Valid @RequestBody AuthTokensRequest request
+    ) {
+        refreshTokenService.revoquer(request.refreshToken());
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -129,7 +213,7 @@ public class AuthController {
                     @ApiResponse(responseCode = "403", description = "❌ Accès refusé (non admin)")
             }
     )
-    public ResponseEntity<LoginResponse> register(
+    public ResponseEntity<AuthTokensDTO> register(
             @Parameter(description = "Données du nouvel utilisateur", required = true)
             @Valid @RequestBody RegisterRequest request,
             @AuthenticationPrincipal UserDetails currentUser
@@ -191,8 +275,9 @@ public class AuthController {
                 saved.getEntreprise() != null ? saved.getEntreprise().getNom() : null
         );
 
+        String refreshToken = refreshTokenService.emettrePour(saved);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new LoginResponse(token, userInfo));
+                .body(new AuthTokensDTO(token, refreshToken, userInfo));
     }
 
     /**

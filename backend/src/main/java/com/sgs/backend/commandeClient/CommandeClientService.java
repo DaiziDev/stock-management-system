@@ -105,6 +105,41 @@ public class CommandeClientService {
     }
 
     /**
+     * VALIDEE -> EXPEDIEE (§3.4). La marchandise est remise au transporteur :
+     * aucun impact stock, les sorties ont déjà été générées à la validation.
+     */
+    @Transactional
+    public CommandeClientResponseDTO expedier(Long id) {
+        CommandeClient commande = getCommandeOrThrow(id);
+        if (commande.getStatut() != StatutCommandeClient.VALIDEE) {
+            throw new IllegalArgumentException(
+                    "Seule une commande VALIDEE peut être expédiée (statut actuel : " + commande.getStatut() + ")"
+            );
+        }
+        commande.setStatut(StatutCommandeClient.EXPEDIEE);
+        return toResponseDTO(commandeClientRepository.save(commande));
+    }
+
+    /**
+     * EXPEDIEE -> LIVREE (§3.4). Livraison confirmée chez le client : aucun
+     * impact stock. Il faut être EXPEDIEE pour garder une trace de l'expédition,
+     * mais on tolère le raccourci VALIDEE -> LIVREE (livraison directe au
+     * comptoir / par vos soins, sans passage par le statut EXPEDIEE).
+     */
+    @Transactional
+    public CommandeClientResponseDTO livrer(Long id) {
+        CommandeClient commande = getCommandeOrThrow(id);
+        if (commande.getStatut() != StatutCommandeClient.EXPEDIEE
+                && commande.getStatut() != StatutCommandeClient.VALIDEE) {
+            throw new IllegalArgumentException(
+                    "Seule une commande VALIDEE ou EXPEDIEE peut être livrée (statut actuel : " + commande.getStatut() + ")"
+            );
+        }
+        commande.setStatut(StatutCommandeClient.LIVREE);
+        return toResponseDTO(commandeClientRepository.save(commande));
+    }
+
+    /**
      * EN_COURS -> ANNULEE uniquement : une commande déjà VALIDEE a déjà
      * généré ses sorties de stock, l'annuler nécessiterait un mouvement
      * inverse (un "avoir"), hors périmètre pour l'instant.
