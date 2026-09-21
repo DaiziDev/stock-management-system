@@ -25,8 +25,8 @@ Concrètement, l'application couvre :
 Prérequis : **Java 17+**, **Maven 3.8+**, **Node.js 20+** (ou 22) et **PostgreSQL 14+**.
 
 ```bash
-# 1. Préparer la base de données (identifiants par défaut : postgres/postgres)
-sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+# 1. Préparer la base de données (remplacez les étoiles par VOTRE mot de passe)
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD '****';"
 sudo -u postgres createdb stock_db
 
 # 2. Lancer le backend (port 8081)
@@ -43,7 +43,7 @@ Puis ouvrez http://localhost:4200 et connectez-vous avec le compte créé automa
 
 | Login             | Mot de passe | Rôle        |
 |-------------------|--------------|-------------|
-| `admin@sgs.local` | `admin123`   | SUPER_ADMIN |
+| `admin@sgs.local` | `****` (défini dans `DataInitializer.java`) | SUPER_ADMIN |
 
 > Note : le wrapper Maven du dépôt est incomplet, utilisez `mvn` plutôt que `./mvnw` tant qu'il n'est pas réparé.
 

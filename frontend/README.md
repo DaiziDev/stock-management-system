@@ -35,7 +35,7 @@ Au premier démarrage du backend, un compte opérateur est créé automatiquemen
 
 | Login             | Mot de passe |
 |-------------------|--------------|
-| `admin@sgs.local` | `admin123`   |
+| `admin@sgs.local` | `****` (défini dans `DataInitializer.java`) |
 
 Selon votre rôle, vous êtes dirigé vers :
 

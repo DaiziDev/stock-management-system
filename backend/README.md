@@ -16,17 +16,20 @@ API REST du système de gestion de stock SGS, construite avec **Spring Boot 3.4*
 
 ### 1. Préparer la base de données
 
-Par défaut, l'application se connecte à `jdbc:postgresql://localhost:5432/stock_db` avec l'utilisateur `postgres` / mot de passe `postgres`.
+Par défaut, l'application se connecte à `jdbc:postgresql://localhost:5432/stock_db` avec l'utilisateur `postgres`. Définissez vous-même le mot de passe de votre choix :
 
 ```bash
-sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+# Remplacez les étoiles par VOTRE mot de passe
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD '****';"
 sudo -u postgres createdb stock_db
 ```
+
+Reportez ce même mot de passe dans la variable `DB_PASSWORD` au lancement de l'application (voir [Configuration](#configuration)).
 
 Vérifiez que la connexion TCP fonctionne (c'est ainsi que l'API se connecte) :
 
 ```bash
-PGPASSWORD=postgres psql -h localhost -U postgres -d stock_db -c "SELECT 1;"
+PGPASSWORD=**** psql -h localhost -U postgres -d stock_db -c "SELECT 1;"
 ```
 
 ### 2. Lancer l'application
@@ -46,9 +49,9 @@ Un compte SUPER_ADMIN de « bootstrap » est créé automatiquement au premier d
 
 | Login             | Mot de passe |
 |-------------------|--------------|
-| `admin@sgs.local` | `admin123`   |
+| `admin@sgs.local` | `****`       |
 
-C'est le compte opérateur de la plateforme : il sert à onboarder les entreprises clientes depuis la console `/plateforme`. Changez ce mot de passe en production.
+C'est le compte opérateur de la plateforme : il sert à onboarder les entreprises clientes depuis la console `/plateforme`. Le login et le mot de passe par défaut sont définis dans `DataInitializer.java` (constantes `BOOTSTRAP_*`) : personnalisez-les avant toute mise en production.
 
 ## Configuration
 
@@ -58,7 +61,7 @@ Toute la configuration par défaut vit dans `src/main/resources/application.yaml
 |-------------------|-----------------------------------------------|----------------------------------------|
 | `DB_URL`          | `jdbc:postgresql://localhost:5432/stock_db`   | URL JDBC PostgreSQL                    |
 | `DB_USERNAME`     | `postgres`                                    | Utilisateur base de données            |
-| `DB_PASSWORD`     | `postgres`                                    | Mot de passe base de données           |
+| `DB_PASSWORD`     | `****` (défaut de dev)                        | Mot de passe base de données           |
 | `JWT_SECRET`      | clé de développement (publique, volontairement) | Clé de signature des tokens JWT     |
 | `JWT_EXPIRATION`  | `86400000` (24 h)                             | Durée de vie de l'access token (ms)    |
 | `JWT_REFRESH_DAYS`| `7`                                           | Durée de vie du refresh token (jours)  |
