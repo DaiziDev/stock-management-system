@@ -18,20 +18,20 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/fournisseurs")
 @RequiredArgsConstructor
-@Tag(name = "🚚 Fournisseurs", description = "Gestion des fiches fournisseurs")
+@Tag(name = "Fournisseurs", description = "Gestion des fiches fournisseurs")
 @SecurityRequirement(name = "bearerAuth")
 public class FournisseurController {
 
     private final FournisseurService fournisseurService;
 
     @GetMapping
-    @Operation(summary = "📋 Lister tous les fournisseurs")
+    @Operation(summary = "Lister tous les fournisseurs")
     public ResponseEntity<List<FournisseurResponseDTO>> findAll() {
         return ResponseEntity.ok(fournisseurService.findAll());
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "🔍 Détail d'un fournisseur")
+    @Operation(summary = "Détail d'un fournisseur")
     public ResponseEntity<FournisseurResponseDTO> findById(
             @Parameter(description = "ID du fournisseur") @PathVariable Long id
     ) {
@@ -39,7 +39,7 @@ public class FournisseurController {
     }
 
     @PostMapping
-    @Operation(summary = "➕ Créer un fournisseur")
+    @Operation(summary = "Créer un fournisseur")
     public ResponseEntity<FournisseurResponseDTO> create(
             @Parameter(description = "Données du fournisseur", required = true)
             @Valid @RequestBody FournisseurRequestDTO dto
@@ -49,7 +49,7 @@ public class FournisseurController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "✏️ Modifier un fournisseur")
+    @Operation(summary = "Modifier un fournisseur")
     public ResponseEntity<FournisseurResponseDTO> update(
             @Parameter(description = "ID du fournisseur") @PathVariable Long id,
             @Parameter(description = "Nouvelles données", required = true)
@@ -59,8 +59,8 @@ public class FournisseurController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "🗑️ Supprimer un fournisseur")
-    @ApiResponse(responseCode = "204", description = "✅ Fournisseur supprimé")
+    @Operation(summary = "Supprimer un fournisseur")
+    @ApiResponse(responseCode = "204", description = "Fournisseur supprimé")
     public ResponseEntity<Void> delete(
             @Parameter(description = "ID du fournisseur") @PathVariable Long id
     ) {

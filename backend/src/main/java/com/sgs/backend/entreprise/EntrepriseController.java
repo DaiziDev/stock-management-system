@@ -35,7 +35,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/entreprises")
 @RequiredArgsConstructor
-@Tag(name = "🏢 Entreprises", description = "Gestion des entreprises clientes (SUPER_ADMIN uniquement)")
+@Tag(name = "Entreprises", description = "Gestion des entreprises clientes (SUPER_ADMIN uniquement)")
 @SecurityRequirement(name = "bearerAuth")
 public class EntrepriseController {
 
@@ -43,7 +43,7 @@ public class EntrepriseController {
     private final UtilisateurService utilisateurService;
 
     @GetMapping
-    @Operation(summary = "📋 Lister toutes les entreprises clientes")
+    @Operation(summary = "Lister toutes les entreprises clientes")
     public ResponseEntity<List<EntrepriseResponseDTO>> findAll(@AuthenticationPrincipal UserDetails currentUser) {
         if (!estSuperAdmin(currentUser)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -52,7 +52,7 @@ public class EntrepriseController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "🔍 Détail d'une entreprise cliente")
+    @Operation(summary = "Détail d'une entreprise cliente")
     public ResponseEntity<EntrepriseResponseDTO> findById(
             @Parameter(description = "ID de l'entreprise") @PathVariable Long id,
             @AuthenticationPrincipal UserDetails currentUser
@@ -64,7 +64,7 @@ public class EntrepriseController {
     }
 
     @PostMapping
-    @Operation(summary = "➕ Créer une entreprise cliente", description = "Réservé au SUPER_ADMIN (plateforme).")
+    @Operation(summary = "Créer une entreprise cliente", description = "Réservé au SUPER_ADMIN (plateforme).")
     public ResponseEntity<EntrepriseResponseDTO> create(
             @Parameter(description = "Données de l'entreprise", required = true)
             @Valid @RequestBody EntrepriseRequestDTO dto,
@@ -78,7 +78,7 @@ public class EntrepriseController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "✏️ Modifier une entreprise cliente", description = "Coordonnées uniquement : le nom (identifiant de cloisonnement) n'est pas modifiable.")
+    @Operation(summary = "Modifier une entreprise cliente", description = "Coordonnées uniquement : le nom (identifiant de cloisonnement) n'est pas modifiable.")
     public ResponseEntity<EntrepriseResponseDTO> update(
             @Parameter(description = "ID de l'entreprise") @PathVariable Long id,
             @Parameter(description = "Nouvelles coordonnées", required = true)
@@ -92,8 +92,8 @@ public class EntrepriseController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "🗑️ Supprimer une entreprise cliente")
-    @ApiResponse(responseCode = "204", description = "✅ Entreprise supprimée")
+    @Operation(summary = "Supprimer une entreprise cliente")
+    @ApiResponse(responseCode = "204", description = "Entreprise supprimée")
     public ResponseEntity<Void> delete(
             @Parameter(description = "ID de l'entreprise") @PathVariable Long id,
             @AuthenticationPrincipal UserDetails currentUser

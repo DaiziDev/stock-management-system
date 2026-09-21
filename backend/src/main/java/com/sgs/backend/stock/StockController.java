@@ -16,26 +16,26 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/stock")
 @RequiredArgsConstructor
-@Tag(name = "📊 Stock", description = "Consultation des niveaux de stock (lecture seule)")
+@Tag(name = "Stock", description = "Consultation des niveaux de stock (lecture seule)")
 @SecurityRequirement(name = "bearerAuth")
 public class StockController {
 
     private final StockService stockService;
 
     @GetMapping("/etat")
-    @Operation(summary = "📋 État du stock", description = "Stock actuel et seuil de chaque article.")
+    @Operation(summary = "État du stock", description = "Stock actuel et seuil de chaque article.")
     public ResponseEntity<List<ArticleStockDTO>> etat() {
         return ResponseEntity.ok(stockService.etat());
     }
 
     @GetMapping("/alertes")
-    @Operation(summary = "🔔 Articles en alerte", description = "Articles dont le stock est descendu au niveau du seuil minimum ou en dessous.")
+    @Operation(summary = "Articles en alerte", description = "Articles dont le stock est descendu au niveau du seuil minimum ou en dessous.")
     public ResponseEntity<List<ArticleStockDTO>> alertes() {
         return ResponseEntity.ok(stockService.alertes());
     }
 
     @GetMapping("/valorisation")
-    @Operation(summary = "💰 Valorisation du stock", description = "Valeur totale du stock (prix HT × quantité, tous articles confondus).")
+    @Operation(summary = "Valorisation du stock", description = "Valeur totale du stock (prix HT × quantité, tous articles confondus).")
     public ResponseEntity<ValorisationResponseDTO> valorisation() {
         return ResponseEntity.ok(stockService.valorisation());
     }

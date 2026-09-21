@@ -25,14 +25,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
-@Tag(name = "🔔 Notifications", description = "Alertes in-app (actuellement : stock sous le seuil minimum)")
+@Tag(name = "Notifications", description = "Alertes in-app (actuellement : stock sous le seuil minimum)")
 @SecurityRequirement(name = "bearerAuth")
 public class NotificationController {
 
     private final StockService stockService;
 
     @GetMapping
-    @Operation(summary = "📋 Notifications actives")
+    @Operation(summary = "Notifications actives")
     public ResponseEntity<List<NotificationDTO>> findAll() {
         List<NotificationDTO> notifications = stockService.alertes().stream()
                 .map(a -> new NotificationDTO(

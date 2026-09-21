@@ -50,7 +50,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "🔐 Authentification", description = "Connexion, inscription et profil utilisateur")
+@Tag(name = "Authentification", description = "Connexion, inscription et profil utilisateur")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -73,12 +73,12 @@ public class AuthController {
      */
     @PostMapping("/login")
     @Operation(
-            summary = "🔑 Connexion",
+            summary = "Connexion",
             description = "Authentifie un utilisateur avec son login et mot de passe. " +
                     "Retourne un token JWT à utiliser dans le header Authorization pour les requêtes suivantes.",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "✅ Connexion réussie — token JWT retourné"),
-                    @ApiResponse(responseCode = "403", description = "❌ Identifiants incorrects")
+                    @ApiResponse(responseCode = "200", description = "Connexion réussie — token JWT retourné"),
+                    @ApiResponse(responseCode = "403", description = "Identifiants incorrects")
             }
     )
     public ResponseEntity<AuthTokensDTO> login(
@@ -133,12 +133,12 @@ public class AuthController {
      */
     @PostMapping("/refresh")
     @Operation(
-            summary = "🔄 Renouveler la session",
+            summary = "Renouveler la session",
             description = "Échange un refresh token valide contre un nouveau couple JWT + refresh token " +
                     "(rotation : l'ancien refresh token devient inutilisable).",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "✅ Nouveau couple de tokens retourné"),
-                    @ApiResponse(responseCode = "401", description = "❌ Refresh token inconnu, expiré ou déjà utilisé")
+                    @ApiResponse(responseCode = "200", description = "Nouveau couple de tokens retourné"),
+                    @ApiResponse(responseCode = "401", description = "Refresh token inconnu, expiré ou déjà utilisé")
             }
     )
     public ResponseEntity<AuthTokensDTO> refresh(
@@ -182,10 +182,10 @@ public class AuthController {
      */
     @PostMapping("/logout")
     @Operation(
-            summary = "🚪 Déconnexion",
+            summary = "Déconnexion",
             description = "Révoque le refresh token fourni. Idempotent.",
             responses = {
-                    @ApiResponse(responseCode = "204", description = "✅ Refresh token révoqué (ou déjà inconnu)")
+                    @ApiResponse(responseCode = "204", description = "Refresh token révoqué (ou déjà inconnu)")
             }
     )
     public ResponseEntity<Void> logout(
@@ -205,12 +205,12 @@ public class AuthController {
      */
     @PostMapping("/register")
     @Operation(
-            summary = "👤 Inscription (Admin uniquement)",
+            summary = "Inscription (Admin uniquement)",
             description = "Crée un nouvel utilisateur. Réservé aux administrateurs.",
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
-                    @ApiResponse(responseCode = "201", description = "✅ Utilisateur créé"),
-                    @ApiResponse(responseCode = "403", description = "❌ Accès refusé (non admin)")
+                    @ApiResponse(responseCode = "201", description = "Utilisateur créé"),
+                    @ApiResponse(responseCode = "403", description = "Accès refusé (non admin)")
             }
     )
     public ResponseEntity<AuthTokensDTO> register(
@@ -291,12 +291,12 @@ public class AuthController {
      */
     @GetMapping("/me")
     @Operation(
-            summary = "👤 Mon profil",
+            summary = "Mon profil",
             description = "Retourne les informations de l'utilisateur connecté (déduit du token JWT).",
             security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "✅ Profil retourné"),
-                    @ApiResponse(responseCode = "401", description = "❌ Non authentifié")
+                    @ApiResponse(responseCode = "200", description = "Profil retourné"),
+                    @ApiResponse(responseCode = "401", description = "Non authentifié")
             }
     )
     public ResponseEntity<CurrentUserResponse> me(

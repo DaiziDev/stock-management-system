@@ -64,7 +64,7 @@ public class DataInitializer implements CommandLineRunner {
             nouveau.setRole(UserRole.SUPER_ADMIN);
             nouveau.setEntreprise(null);
             utilisateurRepository.save(nouveau);
-            log.info("✅ Compte SUPER_ADMIN bootstrap créé — login: {} | mdp: admin123", BOOTSTRAP_LOGIN);
+            log.info("Compte SUPER_ADMIN bootstrap créé — login: {} | mdp: admin123", BOOTSTRAP_LOGIN);
             return nouveau;
         });
 
@@ -72,9 +72,9 @@ public class DataInitializer implements CommandLineRunner {
             bootstrap.setRole(UserRole.SUPER_ADMIN);
             bootstrap.setEntreprise(null);
             utilisateurRepository.save(bootstrap);
-            log.info("🔄 Compte {} mis à niveau vers SUPER_ADMIN (rôle/entreprise corrigés)", BOOTSTRAP_LOGIN);
+            log.info("Compte {} mis à niveau vers SUPER_ADMIN (rôle/entreprise corrigés)", BOOTSTRAP_LOGIN);
         } else {
-            log.info("ℹ️  Compte bootstrap déjà à niveau, pas de modification");
+            log.info("ℹ Compte bootstrap déjà à niveau, pas de modification");
         }
     }
 
@@ -92,7 +92,7 @@ public class DataInitializer implements CommandLineRunner {
             demo.setMail("contact@sgs-demo.local");
             demo.setNumTel("+237 6 00 00 00 00");
             entrepriseRepository.save(demo);
-            log.info("✅ Entreprise de démonstration créée : SGS Demo");
+            log.info("Entreprise de démonstration créée : SGS Demo");
         }
     }
 }

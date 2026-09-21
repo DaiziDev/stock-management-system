@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/plateforme")
 @RequiredArgsConstructor
-@Tag(name = "🛰️ Plateforme", description = "Backoffice de l'opérateur : stats globales et onboarding des entreprises clientes (SUPER_ADMIN)")
+@Tag(name = "Plateforme", description = "Backoffice de l'opérateur : stats globales et onboarding des entreprises clientes (SUPER_ADMIN)")
 @SecurityRequirement(name = "bearerAuth")
 public class PlateformeController {
 
@@ -36,7 +36,7 @@ public class PlateformeController {
     private final UtilisateurService utilisateurService;
 
     @GetMapping("/stats")
-    @Operation(summary = "📊 Statistiques globales de la plateforme")
+    @Operation(summary = "Statistiques globales de la plateforme")
     public ResponseEntity<PlateformeStatsDTO> stats(@AuthenticationPrincipal UserDetails currentUser) {
         if (!estSuperAdmin(currentUser)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -51,7 +51,7 @@ public class PlateformeController {
      * formulaire d'onboarding de la console plateforme.)
      */
     @PostMapping("/entreprises")
-    @Operation(summary = "🚀 Onboarder une entreprise cliente", description = "Crée l'entreprise et son premier compte ADMIN en une seule transaction.")
+    @Operation(summary = "Onboarder une entreprise cliente", description = "Crée l'entreprise et son premier compte ADMIN en une seule transaction.")
     public ResponseEntity<EntrepriseResponseDTO> onboarder(
             @Valid @RequestBody AdminEntrepriseRequestDTO dto,
             @AuthenticationPrincipal UserDetails currentUser

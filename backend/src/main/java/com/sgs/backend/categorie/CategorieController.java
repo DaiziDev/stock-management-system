@@ -18,20 +18,20 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
-@Tag(name = "🏷️ Catégories", description = "Gestion des catégories de produits")
+@Tag(name = "Catégories", description = "Gestion des catégories de produits")
 @SecurityRequirement(name = "bearerAuth")
 public class CategorieController {
 
     private final CategorieService categorieService;
 
     @GetMapping
-    @Operation(summary = "📋 Lister toutes les catégories")
+    @Operation(summary = "Lister toutes les catégories")
     public ResponseEntity<List<CategorieResponseDTO>> findAll() {
         return ResponseEntity.ok(categorieService.findAll());
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "🔍 Détail d'une catégorie")
+    @Operation(summary = "Détail d'une catégorie")
     public ResponseEntity<CategorieResponseDTO> findById(
             @Parameter(description = "ID de la catégorie") @PathVariable Long id
     ) {
@@ -39,7 +39,7 @@ public class CategorieController {
     }
 
     @PostMapping
-    @Operation(summary = "➕ Créer une catégorie")
+    @Operation(summary = "Créer une catégorie")
     public ResponseEntity<CategorieResponseDTO> create(
             @Parameter(description = "Données de la catégorie", required = true)
             @Valid @RequestBody CategorieRequestDTO dto
@@ -49,7 +49,7 @@ public class CategorieController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "✏️ Modifier une catégorie")
+    @Operation(summary = "Modifier une catégorie")
     public ResponseEntity<CategorieResponseDTO> update(
             @Parameter(description = "ID de la catégorie") @PathVariable Long id,
             @Parameter(description = "Nouvelles données", required = true)
@@ -59,8 +59,8 @@ public class CategorieController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "🗑️ Supprimer une catégorie")
-    @ApiResponse(responseCode = "204", description = "✅ Catégorie supprimée")
+    @Operation(summary = "Supprimer une catégorie")
+    @ApiResponse(responseCode = "204", description = "Catégorie supprimée")
     public ResponseEntity<Void> delete(
             @Parameter(description = "ID de la catégorie") @PathVariable Long id
     ) {

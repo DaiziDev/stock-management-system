@@ -14,20 +14,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
-@Tag(name = "📈 Tableau de bord", description = "Indicateurs clés agrégés (stock, commandes, ventes)")
+@Tag(name = "Tableau de bord", description = "Indicateurs clés agrégés (stock, commandes, ventes)")
 @SecurityRequirement(name = "bearerAuth")
 public class DashboardController {
 
     private final DashboardService dashboardService;
 
     @GetMapping("/kpis")
-    @Operation(summary = "📊 KPIs du tableau de bord", description = "Valeur du stock, alertes, commandes en cours, chiffre d'affaires du mois.")
+    @Operation(summary = "KPIs du tableau de bord", description = "Valeur du stock, alertes, commandes en cours, chiffre d'affaires du mois.")
     public ResponseEntity<DashboardKpisDTO> kpis() {
         return ResponseEntity.ok(dashboardService.kpis());
     }
 
     @GetMapping("/graphiques")
-    @Operation(summary = "📈 Données des graphiques", description = "Évolution des entrées/sorties de stock sur 30 jours et top 5 des articles les plus vendus.")
+    @Operation(summary = "Données des graphiques", description = "Évolution des entrées/sorties de stock sur 30 jours et top 5 des articles les plus vendus.")
     public ResponseEntity<GraphiquesResponseDTO> graphiques() {
         return ResponseEntity.ok(dashboardService.graphiques());
     }

@@ -30,14 +30,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/utilisateurs")
 @RequiredArgsConstructor
-@Tag(name = "👥 Utilisateurs", description = "Gestion des comptes (ADMIN uniquement)")
+@Tag(name = "Utilisateurs", description = "Gestion des comptes (ADMIN uniquement)")
 @SecurityRequirement(name = "bearerAuth")
 public class UtilisateurController {
 
     private final UtilisateurService utilisateurService;
 
     @GetMapping
-    @Operation(summary = "📋 Lister les utilisateurs de mon entreprise")
+    @Operation(summary = "Lister les utilisateurs de mon entreprise")
     public ResponseEntity<List<UtilisateurResponseDTO>> findAll(@AuthenticationPrincipal UserDetails currentUser) {
         Utilisateur moi = utilisateurService.findByLogin(currentUser.getUsername());
         if (moi.getRole() != UserRole.ADMIN) {
@@ -51,7 +51,7 @@ public class UtilisateurController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "🔍 Détail d'un utilisateur")
+    @Operation(summary = "Détail d'un utilisateur")
     public ResponseEntity<UtilisateurResponseDTO> findById(@PathVariable Long id, @AuthenticationPrincipal UserDetails currentUser) {
         Utilisateur moi = utilisateurService.findByLogin(currentUser.getUsername());
         if (moi.getRole() != UserRole.ADMIN) {
@@ -61,7 +61,7 @@ public class UtilisateurController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "✏️ Modifier un utilisateur", description = "Nom, prénom, contact et rôle. Ni login ni mot de passe (endpoints séparés).")
+    @Operation(summary = "Modifier un utilisateur", description = "Nom, prénom, contact et rôle. Ni login ni mot de passe (endpoints séparés).")
     public ResponseEntity<UtilisateurResponseDTO> update(
             @PathVariable Long id,
             @Valid @RequestBody UtilisateurUpdateDTO dto,
@@ -76,7 +76,7 @@ public class UtilisateurController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "🗑️ Supprimer un utilisateur")
+    @Operation(summary = "Supprimer un utilisateur")
     public ResponseEntity<Void> delete(@PathVariable Long id, @AuthenticationPrincipal UserDetails currentUser) {
         Utilisateur moi = utilisateurService.findByLogin(currentUser.getUsername());
         if (moi.getRole() != UserRole.ADMIN) {

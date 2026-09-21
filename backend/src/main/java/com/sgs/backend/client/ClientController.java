@@ -18,20 +18,20 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/clients")
 @RequiredArgsConstructor
-@Tag(name = "🧑‍💼 Clients", description = "Gestion des fiches clients")
+@Tag(name = "Clients", description = "Gestion des fiches clients")
 @SecurityRequirement(name = "bearerAuth")
 public class ClientController {
 
     private final ClientService clientService;
 
     @GetMapping
-    @Operation(summary = "📋 Lister tous les clients")
+    @Operation(summary = "Lister tous les clients")
     public ResponseEntity<List<ClientResponseDTO>> findAll() {
         return ResponseEntity.ok(clientService.findAll());
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "🔍 Détail d'un client")
+    @Operation(summary = "Détail d'un client")
     public ResponseEntity<ClientResponseDTO> findById(
             @Parameter(description = "ID du client") @PathVariable Long id
     ) {
@@ -39,7 +39,7 @@ public class ClientController {
     }
 
     @PostMapping
-    @Operation(summary = "➕ Créer un client")
+    @Operation(summary = "Créer un client")
     public ResponseEntity<ClientResponseDTO> create(
             @Parameter(description = "Données du client", required = true)
             @Valid @RequestBody ClientRequestDTO dto
@@ -49,7 +49,7 @@ public class ClientController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "✏️ Modifier un client")
+    @Operation(summary = "Modifier un client")
     public ResponseEntity<ClientResponseDTO> update(
             @Parameter(description = "ID du client") @PathVariable Long id,
             @Parameter(description = "Nouvelles données", required = true)
@@ -59,8 +59,8 @@ public class ClientController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "🗑️ Supprimer un client")
-    @ApiResponse(responseCode = "204", description = "✅ Client supprimé")
+    @Operation(summary = "Supprimer un client")
+    @ApiResponse(responseCode = "204", description = "Client supprimé")
     public ResponseEntity<Void> delete(
             @Parameter(description = "ID du client") @PathVariable Long id
     ) {
